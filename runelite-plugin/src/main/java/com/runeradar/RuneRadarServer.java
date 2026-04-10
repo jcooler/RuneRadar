@@ -109,6 +109,25 @@ public class RuneRadarServer extends WebSocketServer
         }
     }
 
+    /**
+     * Broadcast a raw JSON string to all connected clients.
+     */
+    public void broadcastRaw(String json)
+    {
+        if (clients.isEmpty())
+        {
+            return;
+        }
+
+        for (WebSocket client : clients)
+        {
+            if (client.isOpen())
+            {
+                client.send(json);
+            }
+        }
+    }
+
     public void broadcastLogout()
     {
         if (clients.isEmpty())

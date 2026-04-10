@@ -14,6 +14,8 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 
+import net.runelite.client.plugins.PluginManager;
+
 import javax.inject.Inject;
 
 @Slf4j
@@ -28,11 +30,16 @@ public class RuneRadarPlugin extends Plugin
     private Client client;
 
     @Inject
+    private PluginManager pluginManager;
+
+    @Inject
     private RuneRadarConfig config;
 
     private RuneRadarServer server;
     private WorldPoint lastLocation;
     private WorldPoint lastSurfaceLocation;
+    private QuestHelperBridge questBridge;
+    private String lastQuestData;
 
     @Provides
     RuneRadarConfig provideConfig(ConfigManager configManager)
@@ -46,6 +53,7 @@ public class RuneRadarPlugin extends Plugin
         log.info("RuneRadar starting up");
         server = new RuneRadarServer(config.port());
         server.start();
+        questBridge = new QuestHelperBridge(pluginManager);
         log.info("RuneRadar WebSocket server started on port {}", config.port());
     }
 
@@ -121,6 +129,29 @@ public class RuneRadarPlugin extends Plugin
         if (server != null)
         {
             server.broadcast(data);
+
+            // Send quest helper data if available (every tick, only if changed)
+            if (questBridge != null)
+            {
+                try
+                {
+                    String questData = questBridge.getQuestWaypointsJson();
+                    if (questData != null && !questData.equals(lastQuestData))
+                    {
+                        lastQuestData = questData;
+                        server.broadcastRaw(questData);
+                    }
+                    else if (questData == null && lastQuestData != null)
+                    {
+                        lastQuestData = null;
+                        server.broadcastRaw("{\"type\":\"questHelper\",\"quest\":null}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.debug("RuneRadar: Error sending quest data", e);
+                }
+            }
         }
     }
 

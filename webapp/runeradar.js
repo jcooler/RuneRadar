@@ -206,6 +206,64 @@ function updatePosition(x, y, data) {
   updatePlayerInfo(data);
 }
 
+// ── Quest Helper Rendering ──────────────────────────────
+
+const questLayer = L.layerGroup().addTo(map);
+let questTargetMarker = null;
+let questPathLine = null;
+let questInfoEl = null;
+
+function handleQuestHelper(data) {
+  // Clear old quest markers
+  questLayer.clearLayers();
+  questTargetMarker = null;
+  questPathLine = null;
+
+  if (!data.quest) {
+    // Quest deselected — hide info
+    if (questInfoEl) questInfoEl.style.display = "none";
+    return;
+  }
+
+  // Show quest info panel
+  if (!questInfoEl) {
+    questInfoEl = document.createElement("div");
+    questInfoEl.id = "quest-info";
+    questInfoEl.style.cssText = "position:fixed;top:56px;left:12px;z-index:1000;background:rgba(13,17,23,0.9);border:1px solid #30363d;border-radius:8px;padding:8px 12px;backdrop-filter:blur(8px);max-width:300px;";
+    document.body.appendChild(questInfoEl);
+  }
+  questInfoEl.style.display = "block";
+  questInfoEl.innerHTML = `
+    <div style="color:#f0c040;font-size:13px;font-weight:600;">📜 ${data.quest}</div>
+    ${data.stepText ? `<div style="color:#c9d1d9;font-size:12px;margin-top:4px;">${data.stepText}</div>` : ""}
+  `;
+
+  // Draw target waypoint markers
+  if (data.waypoints && data.waypoints.length > 0) {
+    data.waypoints.forEach((wp) => {
+      const marker = L.marker(gameToLatLng(wp.x, wp.y), {
+        icon: L.divIcon({
+          className: "",
+          html: '<div style="width:14px;height:14px;background:#f0c040;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px #f0c040cc;animation:pulse 2s ease-in-out infinite;"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        }),
+        zIndexOffset: 900,
+      }).addTo(questLayer);
+      marker.bindTooltip(`Quest target: ${data.quest}`, { direction: "top" });
+      questTargetMarker = marker;
+    });
+  }
+
+  // Draw path line
+  if (data.path && data.path.length > 1) {
+    questPathLine = L.polyline(
+      data.path.map((p) => gameToLatLng(p.x, p.y)),
+      { color: "#f0c040", weight: 3, opacity: 0.7, dashArray: "8,6" }
+    ).addTo(questLayer);
+  }
+}
+
 // ── Data Source: RuneRadar WebSocket ─────────────────────
 
 let ws = null;
@@ -223,6 +281,7 @@ function connectWebSocket() {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "position") updatePosition(data.x, data.y, data);
+      else if (data.type === "questHelper") handleQuestHelper(data);
       else if (data.type === "logout") handleLogout();
     } catch {}
   };
@@ -287,8 +346,10 @@ function startConnectionLoop() {
 function handleLogout() {
   if (playerMarker) { map.removeLayer(playerMarker); playerMarker = null; }
   if (playerLabelMarker) { map.removeLayer(playerLabelMarker); playerLabelMarker = null; }
+  questLayer.clearLayers();
+  if (questInfoEl) questInfoEl.style.display = "none";
   hidePlayerInfo();
-  switchPlane(0); // reset to surface
+  switchPlane(0);
   setStatus("Player logged out", "disconnected");
 }
 
@@ -350,6 +411,9 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
   // Add transport layers
   const transportLayers = loadTransportLayers(map, gameToLatLng);
   Object.assign(overlayLayers, transportLayers);
+
+  // Quest helper layer
+  overlayLayers["Quest Waypoints"] = questLayer;
 
   const control = L.control.layers(null, overlayLayers, {
     position: "topright",
