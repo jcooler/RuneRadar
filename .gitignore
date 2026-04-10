@@ -1,0 +1,22 @@
+# Gradle
+runelite-plugin/.gradle/
+runelite-plugin/build/
+runelite-plugin/out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# osrs-wiki-maps tool (cloned separately)
+osrs-wiki-maps/
+
+# Compiled classes
+runelite-plugin/bin/
+
+# Downloaded maps
+webapp/*.jpg

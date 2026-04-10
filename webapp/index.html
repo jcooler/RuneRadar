@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RuneRadar</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0d1117; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+    #map { width: 100vw; height: 100vh; background: #0d1117; }
+
+    /* Status bar */
+    #status {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; padding: 6px 16px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.3s ease;
+    }
+    #status.connected { background: rgba(76,175,80,0.2); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); }
+    #status.disconnected { background: rgba(244,67,54,0.2); color: #EF5350; border: 1px solid rgba(244,67,54,0.3); }
+    #status.connecting { background: rgba(255,152,0,0.2); color: #FFA726; border: 1px solid rgba(255,152,0,0.3); }
+
+    /* Search bar */
+    #search-container {
+      position: fixed; top: 12px; left: 60px; z-index: 1001; width: 320px;
+    }
+    #search-input {
+      width: 100%; padding: 10px 14px; border: 1px solid #30363d; border-radius: 8px;
+      background: rgba(13,17,23,0.92); color: #c9d1d9; font-size: 14px;
+      backdrop-filter: blur(10px); outline: none;
+    }
+    #search-input:focus { border-color: #58a6ff; background: rgba(13,17,23,0.95); color: #c9d1d9; }
+    #search-input:autofill, #search-input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 30px #0d1117 inset !important;
+      -webkit-text-fill-color: #c9d1d9 !important;
+      caret-color: #c9d1d9;
+    }
+    #search-input::placeholder { color: #484f58; }
+    #search-results {
+      display: none; margin-top: 4px; background: rgba(13,17,23,0.95); border: 1px solid #30363d;
+      border-radius: 8px; overflow: hidden; backdrop-filter: blur(10px);
+    }
+    .search-result {
+      padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    }
+    .search-result:hover, .search-result.active { background: #21262d; }
+    .sr-name { color: #c9d1d9; font-size: 13px; }
+    .sr-type { color: #484f58; font-size: 11px; }
+
+    /* Player info panel */
+    #player-info {
+      position: fixed; bottom: 12px; left: 12px; z-index: 1000;
+      background: rgba(13,17,23,0.9); border: 1px solid #30363d; border-radius: 8px;
+      padding: 10px 14px; backdrop-filter: blur(8px); min-width: 200px;
+    }
+    #player-info .name { color: #58a6ff; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    #player-info .coords { color: #8b949e; font-size: 12px; font-family: monospace; }
+    #player-info .stats { display: flex; gap: 14px; margin-top: 6px; font-size: 12px; }
+    #player-info .stat { display: flex; align-items: center; gap: 3px; }
+    #player-info .stat img { width: 14px; height: 14px; image-rendering: pixelated; }
+    .stat-hp { color: #e74c3c; } .stat-pray { color: #3498db; } .stat-run { color: #f1c40f; }
+    #player-info.hidden { display: none; }
+
+    /* Hover coords */
+    #hover-coords {
+      position: fixed; bottom: 12px; right: 56px; z-index: 1000;
+      background: rgba(13,17,23,0.8); border: 1px solid #30363d; border-radius: 6px;
+      padding: 4px 8px; color: #8b949e; font-size: 11px; font-family: monospace;
+      backdrop-filter: blur(8px); min-width: 60px; text-align: center;
+    }
+
+    /* Tool buttons */
+    .tool-btn {
+      position: fixed; z-index: 1000; width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(13,17,23,0.9); border: 1px solid #30363d;
+      color: #c9d1d9; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); transition: all 0.15s;
+    }
+    .tool-btn:hover { background: #21262d; border-color: #58a6ff; color: #58a6ff; }
+    .tool-btn.active { background: #1f6feb; border-color: #58a6ff; color: white; }
+    .tool-btn.hidden { display: none; }
+
+    #locate-btn { top: 12px; right: 56px; }
+    #measure-btn { top: 12px; right: 100px; }
+    #pin-btn { top: 12px; right: 144px; }
+    #path-btn { top: 12px; right: 188px; }
+    #clear-drawings-btn { top: 12px; right: 232px; }
+
+    /* Pin modal */
+    #pin-modal {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      z-index: 2000; background: rgba(13,17,23,0.97); border: 1px solid #30363d; border-radius: 10px;
+      padding: 16px 20px; backdrop-filter: blur(10px); width: 280px;
+    }
+    #pin-modal h3 { color: #c9d1d9; font-size: 14px; margin-bottom: 10px; font-weight: 600; }
+    #pin-modal input {
+      width: 100%; padding: 8px 10px; border: 1px solid #30363d; border-radius: 6px;
+      background: #161b22; color: #c9d1d9; font-size: 13px; outline: none; margin-bottom: 10px;
+    }
+    #pin-modal input:focus { border-color: #58a6ff; }
+    #pin-modal .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    #pin-modal .modal-btns button {
+      padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #30363d;
+    }
+    #pin-modal .btn-save { background: #1f6feb; color: #fff; border-color: #58a6ff; }
+    #pin-modal .btn-save:hover { background: #388bfd; }
+    #pin-modal .btn-cancel { background: #21262d; color: #c9d1d9; }
+    #pin-modal .btn-cancel:hover { background: #30363d; }
+    #pin-overlay { display: none; position: fixed; inset: 0; z-index: 1999; background: rgba(0,0,0,0.4); }
+
+    /* Pin list panel */
+    #pin-list {
+      display: none; position: fixed; top: 56px; right: 144px; z-index: 1001;
+      background: rgba(13,17,23,0.95); border: 1px solid #30363d; border-radius: 8px;
+      padding: 8px; backdrop-filter: blur(10px); max-height: 300px; overflow-y: auto; width: 220px;
+    }
+    #pin-list .pin-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 8px; cursor: pointer; border-radius: 4px; font-size: 12px; color: #c9d1d9;
+    }
+    #pin-list .pin-item:hover { background: #21262d; }
+    #pin-list .pin-item .pin-coords { color: #484f58; font-size: 10px; font-family: monospace; }
+    #pin-list .empty-msg { color: #484f58; font-size: 12px; text-align: center; padding: 8px; }
+
+    /* Toast notification */
+    #toast {
+      display: none; position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 2000; background: rgba(13,17,23,0.95); border: 1px solid #30363d;
+      border-radius: 8px; padding: 8px 16px; color: #c9d1d9; font-size: 13px;
+      backdrop-filter: blur(8px); transition: opacity 0.3s;
+    }
+
+    /* Leaflet overrides */
+    .leaflet-control-zoom a { background: #161b22 !important; color: #c9d1d9 !important; border-color: #30363d !important; }
+    .leaflet-control-zoom a:hover { background: #21262d !important; }
+    .leaflet-control-attribution { background: rgba(13,17,23,0.8) !important; color: #484f58 !important; }
+    .leaflet-control-attribution a { color: #58a6ff !important; }
+
+    /* Town labels */
+    .town-label span {
+      color: #fff; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 0 3px #000;
+      font-family: 'Segoe UI', Arial, sans-serif; font-weight: 600; white-space: nowrap; pointer-events: none;
+    }
+    .kingdom-label span {
+      color: #d4a017; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 0 4px #000;
+      font-family: 'Segoe UI', Arial, sans-serif; font-weight: 700; font-style: italic;
+      white-space: nowrap; pointer-events: none; letter-spacing: 2px;
+    }
+    .player-label {
+      color: #fff; font-size: 14px; font-family: 'Segoe UI', Arial, sans-serif; font-weight: 600;
+      text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; white-space: nowrap; text-align: center; pointer-events: none;
+    }
+
+    /* Transport icons */
+    .transport-icon { text-align: center; font-weight: 700; pointer-events: auto; }
+    .fairy-ring span {
+      background: rgba(34,139,34,0.9); color: #fff; font-size: 12px; padding: 2px 6px;
+      border-radius: 4px; border: 1px solid #2ecc40; white-space: nowrap;
+      font-family: monospace; letter-spacing: 1px;
+    }
+    .spirit-tree { font-size: 20px; }
+    .teleport-icon { display: flex; align-items: center; gap: 0; }
+    .teleport-icon img { width: 24px; height: 24px; image-rendering: pixelated; }
+
+    /* Measure label */
+    .measure-label {
+      color: #58a6ff; font-size: 16px; font-weight: 700; text-align: center;
+      text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; white-space: nowrap; pointer-events: none;
+    }
+
+    /* Custom pins */
+    .custom-pin { position: relative; font-size: 24px; line-height: 1; }
+    .pin-label {
+      position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+      font-size: 13px; color: #fff; white-space: nowrap;
+      text-shadow: 0 0 3px #000, 0 0 3px #000, 1px 1px 2px #000; font-weight: 700;
+    }
+
+    /* Layer control */
+    .leaflet-control-layers { background: rgba(13,17,23,0.95) !important; border: 1px solid #30363d !important;
+      border-radius: 8px !important; backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+      color: #c9d1d9 !important; font-family: 'Segoe UI', Arial, sans-serif; padding: 0 !important; }
+    .leaflet-control-layers-expanded { padding: 10px 14px !important; min-width: 190px; max-height: 80vh; overflow-y: auto; }
+    .leaflet-control-layers-toggle { background-color: rgba(13,17,23,0.9) !important; border: 1px solid #30363d !important;
+      border-radius: 8px !important; width: 36px !important; height: 36px !important; }
+    .leaflet-control-layers label { color: #c9d1d9 !important; font-size: 13px !important; display: flex !important;
+      align-items: center !important; gap: 8px !important; padding: 4px 0 !important; cursor: pointer !important; transition: color 0.15s !important; }
+    .leaflet-control-layers label:hover { color: #fff !important; }
+    .leaflet-control-layers-separator { border-top: 1px solid #21262d !important; margin: 6px 0 !important; }
+    .leaflet-control-layers input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+      border: 1.5px solid #484f58; border-radius: 3px; background: #161b22; cursor: pointer; position: relative; flex-shrink: 0; transition: all 0.15s ease; }
+    .leaflet-control-layers input[type="checkbox"]:hover { border-color: #58a6ff; background: #1c2129; }
+    .leaflet-control-layers input[type="checkbox"]:checked { background: #1f6feb; border-color: #58a6ff; }
+    .leaflet-control-layers input[type="checkbox"]:checked::after { content: ''; position: absolute; left: 4px; top: 1px;
+      width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .leaflet-control-layers-overlays span { font-size: 13px; }
+
+    /* Settings section */
+    .settings-section { border-top: 1px solid #21262d; margin-top: 6px; padding-top: 6px; }
+    .settings-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #484f58; margin-bottom: 4px; }
+    .settings-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; color: #c9d1d9; }
+    .settings-row label { color: #8b949e; font-size: 11px; min-width: 50px; }
+    .settings-row input[type="color"] { width: 24px; height: 24px; border: 1px solid #30363d; border-radius: 3px; background: none; cursor: pointer; padding: 1px; }
+
+    /* Tooltip */
+    .leaflet-tooltip { background: rgba(13,17,23,0.95) !important; border: 1px solid #30363d !important;
+      color: #c9d1d9 !important; border-radius: 4px !important; font-size: 12px !important; text-transform: capitalize; }
+    .leaflet-tooltip-top::before { border-top-color: #30363d !important; }
+
+    /* Minimap */
+    .leaflet-control-minimap { border: 1px solid #30363d !important; border-radius: 4px !important; }
+
+    /* Player marker */
+    .player-marker { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.85; } }
+  </style>
+</head>
+<body>
+  <div id="status" class="connecting">Connecting to RuneLite...</div>
+
+  <div id="search-container">
+    <div style="position:relative">
+      <input type="text" id="search-input" placeholder="Search locations... (towns, fairy rings, teleports)" />
+      <button id="search-clear" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);
+        background:none;border:none;color:#484f58;font-size:16px;cursor:pointer;display:none;padding:2px 4px;"
+        >&times;</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
+
+  <div id="player-info" class="hidden">
+    <div class="name" id="p-name">—</div>
+    <div class="coords" id="p-coords">—</div>
+    <div class="stats">
+      <span class="stat stat-hp"><img src="https://oldschool.runescape.wiki/images/Hitpoints_icon_%28detail%29.png" alt="HP"> <span id="p-hp">0</span></span>
+      <span class="stat stat-pray"><img src="https://oldschool.runescape.wiki/images/Prayer_icon_%28detail%29.png" alt="Prayer"> <span id="p-pray">0</span></span>
+      <span class="stat stat-run"><img src="https://oldschool.runescape.wiki/images/Agility_icon_%28detail%29.png" alt="Run"> <span id="p-run">0</span>%</span>
+    </div>
+  </div>
+
+  <div id="hover-coords"></div>
+
+  <button class="tool-btn" id="locate-btn" title="Go to player (Space)">⌖</button>
+  <button class="tool-btn" id="measure-btn" title="Measure distance">📏</button>
+  <button class="tool-btn" id="pin-btn" title="Drop a pin">📌</button>
+  <button class="tool-btn" id="path-btn" title="Draw path">✏️</button>
+  <button class="tool-btn" id="clear-drawings-btn" title="Clear all pins &amp; paths">🗑️</button>
+
+  <div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:1999;background:rgba(0,0,0,0.4)"></div>
+
+  <div id="pin-modal" style="display:none">
+    <h3>📌 Drop Pin</h3>
+    <input type="text" id="pin-note-input" placeholder="Pin name (optional)" />
+    <div class="modal-btns">
+      <button class="btn-cancel" id="pin-cancel">Cancel</button>
+      <button class="btn-save" id="pin-save">Save</button>
+    </div>
+  </div>
+
+  <div id="confirm-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:2000;background:rgba(13,17,23,0.97);border:1px solid #30363d;border-radius:10px;
+    padding:16px 20px;backdrop-filter:blur(10px);width:300px;">
+    <h3 style="color:#c9d1d9;font-size:14px;margin-bottom:6px;font-weight:600" id="confirm-title">Are you sure?</h3>
+    <p style="color:#8b949e;font-size:12px;margin-bottom:14px" id="confirm-msg">This action cannot be undone.</p>
+    <div class="modal-btns" style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-cancel" id="confirm-no" style="padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#c9d1d9">Cancel</button>
+      <button id="confirm-yes" style="padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid #f85149;background:#da3633;color:#fff">Delete All</button>
+    </div>
+  </div>
+
+  <div id="pin-list"></div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+  <script src="transport-data.js"></script>
+  <script src="map-icons.js"></script>
+  <script src="tools.js"></script>
+  <script src="runeradar.js"></script>
+</body>
+</html>
