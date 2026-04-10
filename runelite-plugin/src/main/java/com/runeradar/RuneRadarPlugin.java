@@ -39,7 +39,9 @@ public class RuneRadarPlugin extends Plugin
     private WorldPoint lastLocation;
     private WorldPoint lastSurfaceLocation;
     private QuestHelperBridge questBridge;
+    private ClueScrollBridge clueBridge;
     private String lastQuestData;
+    private String lastClueData;
 
     @Provides
     RuneRadarConfig provideConfig(ConfigManager configManager)
@@ -54,6 +56,7 @@ public class RuneRadarPlugin extends Plugin
         server = new RuneRadarServer(config.port());
         server.start();
         questBridge = new QuestHelperBridge(pluginManager);
+        clueBridge = new ClueScrollBridge(pluginManager);
         log.info("RuneRadar WebSocket server started on port {}", config.port());
     }
 
@@ -89,10 +92,7 @@ public class RuneRadarPlugin extends Plugin
             return;
         }
 
-        if (location.equals(lastLocation))
-        {
-            return;
-        }
+        boolean positionChanged = !location.equals(lastLocation);
         lastLocation = location;
 
         boolean isInstanced = client.isInInstancedRegion();
@@ -128,7 +128,10 @@ public class RuneRadarPlugin extends Plugin
 
         if (server != null)
         {
-            server.broadcast(data);
+            if (positionChanged)
+            {
+                server.broadcast(data);
+            }
 
             // Send quest helper data if available (every tick, only if changed)
             if (questBridge != null)
@@ -150,6 +153,29 @@ public class RuneRadarPlugin extends Plugin
                 catch (Exception e)
                 {
                     log.debug("RuneRadar: Error sending quest data", e);
+                }
+            }
+
+            // Send clue scroll data if available
+            if (clueBridge != null)
+            {
+                try
+                {
+                    String clueData = clueBridge.getClueDataJson();
+                    if (clueData != null && !clueData.equals(lastClueData))
+                    {
+                        lastClueData = clueData;
+                        server.broadcastRaw(clueData);
+                    }
+                    else if (clueData == null && lastClueData != null)
+                    {
+                        lastClueData = null;
+                        server.broadcastRaw("{\"type\":\"clueScroll\",\"location\":null}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.debug("RuneRadar: Error sending clue data", e);
                 }
             }
         }

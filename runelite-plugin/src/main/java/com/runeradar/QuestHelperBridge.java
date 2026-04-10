@@ -88,8 +88,59 @@ public class QuestHelperBridge
 
         try
         {
-            // Get selectedQuest field
+            // Quest Helper stores active quest via questManager
+            // Try direct field first, then go through questManager
             Object selectedQuest = getFieldValue(questHelperPlugin, "selectedQuest");
+            if (selectedQuest == null) selectedQuest = getFieldValue(questHelperPlugin, "selectedQuestHelper");
+
+            // Try via questManager.getSelectedQuest() or similar
+            if (selectedQuest == null)
+            {
+                Object questManager = getFieldValue(questHelperPlugin, "questManager");
+                if (questManager != null)
+                {
+                    // Try methods on questManager
+                    for (String methodName : new String[]{"getSelectedQuest", "getActiveQuest",
+                        "getSelectedQuestHelper", "getActiveHelper", "getRunningHelper"})
+                    {
+                        try
+                        {
+                            java.lang.reflect.Method m = questManager.getClass().getMethod(methodName);
+                            selectedQuest = m.invoke(questManager);
+                            if (selectedQuest != null)
+                            {
+                                log.info("RuneRadar: Found quest via questManager.{}()", methodName);
+                                break;
+                            }
+                        }
+                        catch (NoSuchMethodException ignored) {}
+                    }
+
+                    // Try fields on questManager
+                    if (selectedQuest == null)
+                    {
+                        for (java.lang.reflect.Field f : questManager.getClass().getDeclaredFields())
+                        {
+                            try
+                            {
+                                f.setAccessible(true);
+                                Object val = f.get(questManager);
+                                String typeName = f.getType().getSimpleName();
+                                if (val != null && (typeName.contains("Quest") || typeName.contains("Helper"))
+                                    && !typeName.contains("Manager") && !typeName.contains("Config")
+                                    && !typeName.contains("Panel") && !typeName.contains("Menu"))
+                                {
+                                    log.info("RuneRadar QuestMgrDebug: field '{}' type={} class={}",
+                                        f.getName(), typeName, val.getClass().getSimpleName());
+                                    selectedQuest = val;
+                                }
+                            }
+                            catch (Exception ignored) {}
+                        }
+                    }
+                }
+            }
+
             if (selectedQuest == null)
             {
                 return null;
@@ -116,30 +167,83 @@ public class QuestHelperBridge
                     .trim();
             }
 
-            // Get current step
+            // Get current step — try many method names
             Object currentStep = null;
-            try
+            for (String mName : new String[]{"getCurrentStep", "getActiveStep", "getSidebarStep",
+                "getStep", "getCurrentDisplayStep"})
             {
-                Method getCurrentStep = selectedQuest.getClass().getMethod("getCurrentStep");
-                currentStep = getCurrentStep.invoke(selectedQuest);
-            }
-            catch (NoSuchMethodException e)
-            {
-                // Try alternative method names
                 try
                 {
-                    Method getStep = selectedQuest.getClass().getMethod("getActiveStep");
-                    currentStep = getStep.invoke(selectedQuest);
+                    Method m = selectedQuest.getClass().getMethod(mName);
+                    currentStep = m.invoke(selectedQuest);
+                    if (currentStep != null)
+                    {
+                        log.info("RuneRadar: Got step via {}(): {}", mName, currentStep.getClass().getSimpleName());
+                        break;
+                    }
                 }
-                catch (Exception e2)
+                catch (NoSuchMethodException ignored) {}
+                catch (Exception e) { log.debug("RuneRadar: Error calling {}", mName, e); }
+            }
+
+            // If no step method worked, scan fields
+            if (currentStep == null)
+            {
+                for (java.lang.reflect.Field f : selectedQuest.getClass().getDeclaredFields())
                 {
-                    return null;
+                    try
+                    {
+                        f.setAccessible(true);
+                        Object val = f.get(selectedQuest);
+                        if (val != null)
+                        {
+                            String tName = val.getClass().getSimpleName();
+                            if (tName.contains("Step") || tName.contains("WorldPoint"))
+                            {
+                                log.info("RuneRadar QuestStepScan: field '{}' type={}", f.getName(), tName);
+                                if (tName.contains("Step")) currentStep = val;
+                            }
+                        }
+                    }
+                    catch (Exception ignored) {}
                 }
             }
 
             if (currentStep == null)
             {
+                log.debug("RuneRadar: No current step found for quest");
                 return null;
+            }
+
+            // Unwrap ConditionalStep / wrapper steps to get the actual active step
+            for (int depth = 0; depth < 5; depth++)
+            {
+                String stepType = currentStep.getClass().getSimpleName();
+                if (stepType.contains("Conditional") || stepType.contains("Wrapper"))
+                {
+                    Object inner = null;
+                    // Try getActiveStep()
+                    for (String m : new String[]{"getActiveStep", "getStep", "getCurrentStep"})
+                    {
+                        try
+                        {
+                            inner = currentStep.getClass().getMethod(m).invoke(currentStep);
+                            if (inner != null) break;
+                        }
+                        catch (Exception ignored) {}
+                    }
+                    // Try field 'activeStep' or 'step'
+                    if (inner == null) inner = getFieldValue(currentStep, "activeStep");
+                    if (inner == null) inner = getFieldValue(currentStep, "step");
+
+                    if (inner != null && inner != currentStep)
+                    {
+                        log.debug("RuneRadar: Unwrapped {} -> {}", stepType, inner.getClass().getSimpleName());
+                        currentStep = inner;
+                    }
+                    else break;
+                }
+                else break;
             }
 
             JsonObject result = new JsonObject();
@@ -169,25 +273,143 @@ public class QuestHelperBridge
                 // Step text not available
             }
 
-            // Get target world point
+            // Get target world point — try multiple approaches
             JsonArray waypoints = new JsonArray();
+            WorldPoint foundWp = null;
+
+            // Try direct method
+            for (String methodName : new String[]{"getWorldPoint", "getWorldLocation",
+                "getLocation", "getWorldMapPoint", "getDestination"})
+            {
+                try
+                {
+                    Method m = currentStep.getClass().getMethod(methodName);
+                    Object result2 = m.invoke(currentStep);
+                    if (result2 instanceof WorldPoint)
+                    {
+                        foundWp = (WorldPoint) result2;
+                        break;
+                    }
+                }
+                catch (Exception ignored) {}
+            }
+
+            // Try DefinedPoint — Quest Helper's custom wrapper
             try
             {
-                Method getWorldPoint = currentStep.getClass().getMethod("getWorldPoint");
-                WorldPoint wp = (WorldPoint) getWorldPoint.invoke(currentStep);
-                if (wp != null)
+                Object definedPoint = getFieldValue(currentStep, "definedPoint");
+                if (definedPoint != null)
                 {
-                    JsonObject point = new JsonObject();
-                    point.addProperty("x", wp.getX());
-                    point.addProperty("y", wp.getY());
-                    point.addProperty("plane", wp.getPlane());
-                    point.addProperty("type", "target");
-                    waypoints.add(point);
+                    // DefinedPoint has getX(), getY(), getPlane() or wraps a WorldPoint
+                    try
+                    {
+                        Method gx = definedPoint.getClass().getMethod("getX");
+                        Method gy = definedPoint.getClass().getMethod("getY");
+                        Method gp = definedPoint.getClass().getMethod("getPlane");
+                        int x = (int) gx.invoke(definedPoint);
+                        int y = (int) gy.invoke(definedPoint);
+                        int p = (int) gp.invoke(definedPoint);
+                        foundWp = new WorldPoint(x, y, p);
+                        log.info("RuneRadar: Found quest WP via DefinedPoint: {}", foundWp);
+                    }
+                    catch (Exception e)
+                    {
+                        // Try getWorldPoint() on DefinedPoint
+                        try
+                        {
+                            Method gwp = definedPoint.getClass().getMethod("getWorldPoint");
+                            foundWp = (WorldPoint) gwp.invoke(definedPoint);
+                            log.info("RuneRadar: Found quest WP via DefinedPoint.getWorldPoint(): {}", foundWp);
+                        }
+                        catch (Exception ignored) {}
+                    }
                 }
             }
-            catch (Exception e)
+            catch (Exception ignored) {}
+
+            // Try mapPoint — WorldMapPoint has getWorldPoint()
+            if (foundWp == null)
             {
-                // No single world point
+                try
+                {
+                    Object mapPoint = getFieldValue(currentStep, "mapPoint");
+                    if (mapPoint != null)
+                    {
+                        Method gwp = mapPoint.getClass().getMethod("getWorldPoint");
+                        foundWp = (WorldPoint) gwp.invoke(mapPoint);
+                        log.info("RuneRadar: Found quest WP via mapPoint: {}", foundWp);
+                    }
+                }
+                catch (Exception ignored) {}
+            }
+
+            // Deep scan: first pass — look for single WorldPoint fields
+            if (foundWp == null)
+            {
+                Class<?> stepClass = currentStep.getClass();
+                while (stepClass != null && stepClass != Object.class && foundWp == null)
+                {
+                    for (java.lang.reflect.Field f : stepClass.getDeclaredFields())
+                    {
+                        try
+                        {
+                            if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+                            f.setAccessible(true);
+                            Object val = f.get(currentStep);
+                            if (val instanceof WorldPoint)
+                            {
+                                foundWp = (WorldPoint) val;
+                                log.info("RuneRadar: Found quest WP in {}.{}: {}", stepClass.getSimpleName(), f.getName(), foundWp);
+                                break;
+                            }
+                        }
+                        catch (Exception ignored) {}
+                    }
+                    stepClass = stepClass.getSuperclass();
+                }
+            }
+
+            // Deep scan: second pass — check Lists of WorldPoints
+            if (foundWp == null)
+            {
+                Class<?> stepClass = currentStep.getClass();
+                while (stepClass != null && stepClass != Object.class && foundWp == null)
+                {
+                    for (java.lang.reflect.Field f : stepClass.getDeclaredFields())
+                    {
+                        try
+                        {
+                            if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+                            f.setAccessible(true);
+                            Object val = f.get(currentStep);
+                            if (val instanceof Collection)
+                            {
+                                for (Object item : (Collection<?>) val)
+                                {
+                                    if (item instanceof WorldPoint)
+                                    {
+                                        foundWp = (WorldPoint) item;
+                                        log.info("RuneRadar: Found quest WP in list {}.{}: {}", stepClass.getSimpleName(), f.getName(), foundWp);
+                                        break;
+                                    }
+                                }
+                                if (foundWp != null) break;
+                            }
+                        }
+                        catch (Exception ignored) {}
+                    }
+                    stepClass = stepClass.getSuperclass();
+                }
+            }
+
+            if (foundWp != null)
+            {
+                JsonObject point = new JsonObject();
+                point.addProperty("x", foundWp.getX());
+                point.addProperty("y", foundWp.getY());
+                point.addProperty("plane", foundWp.getPlane());
+                point.addProperty("type", "target");
+                waypoints.add(point);
             }
 
             // Get world line points (path to follow)

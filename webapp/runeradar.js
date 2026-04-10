@@ -12,6 +12,7 @@ const RECONNECT_INTERVAL = 3000;
 let markerColor = localStorage.getItem("runeradar-color") || "#3eff3e";
 let showLocationLabel = localStorage.getItem("runeradar-label") !== "false";
 let autoFollow = localStorage.getItem("runeradar-follow") !== "false";
+let fontScale = parseFloat(localStorage.getItem("runeradar-fontscale") || "1.0");
 
 // ── Map Setup ───────────────────────────────────────────
 
@@ -122,7 +123,7 @@ map.on("mousedown", () => {
 document.getElementById("locate-btn").addEventListener("click", () => {
   if (playerMarker) {
     followPlayer = true;
-    map.panTo(playerMarker.getLatLng());
+    map.setView(playerMarker.getLatLng(), Math.max(map.getZoom(), 1), { animate: true });
   }
 });
 
@@ -229,28 +230,42 @@ function handleQuestHelper(data) {
   if (!questInfoEl) {
     questInfoEl = document.createElement("div");
     questInfoEl.id = "quest-info";
-    questInfoEl.style.cssText = "position:fixed;top:56px;left:12px;z-index:1000;background:rgba(13,17,23,0.9);border:1px solid #30363d;border-radius:8px;padding:8px 12px;backdrop-filter:blur(8px);max-width:300px;";
+    questInfoEl.style.cssText = "position:fixed;top:56px;right:12px;z-index:1000;background:rgba(13,17,23,0.92);border:1px solid #f0c040;border-radius:8px;padding:10px 14px;backdrop-filter:blur(10px);max-width:340px;";
     document.body.appendChild(questInfoEl);
   }
   questInfoEl.style.display = "block";
+  const hasWp = data.waypoints && data.waypoints.length > 0;
+  const wp = hasWp ? data.waypoints[0] : null;
   questInfoEl.innerHTML = `
-    <div style="color:#f0c040;font-size:13px;font-weight:600;">📜 ${data.quest}</div>
-    ${data.stepText ? `<div style="color:#c9d1d9;font-size:12px;margin-top:4px;">${data.stepText}</div>` : ""}
+    <div style="color:#f0c040;font-size:14px;font-weight:700;">📜 ${data.quest}</div>
+    ${data.stepText ? `<div style="color:#e8e8e8;font-size:13px;margin-top:6px;line-height:1.5;">${data.stepText}</div>` : ""}
+    ${wp ? `<div style="color:#8b949e;font-size:11px;margin-top:8px;">(${wp.x}, ${wp.y})</div>` : ""}
+    <button id="quest-goto" style="background:#1f6feb;color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;margin-top:8px;width:100%;">Go to location</button>
   `;
+  document.getElementById("quest-goto")?.addEventListener("click", () => {
+    if (wp) {
+      map.setView(gameToLatLng(wp.x, wp.y), 2, { animate: true });
+    } else if (questTargetMarker) {
+      map.setView(questTargetMarker.getLatLng(), 2, { animate: true });
+    }
+  });
 
-  // Draw target waypoint markers
+  // Draw target waypoint markers with quest icon
   if (data.waypoints && data.waypoints.length > 0) {
     data.waypoints.forEach((wp) => {
       const marker = L.marker(gameToLatLng(wp.x, wp.y), {
         icon: L.divIcon({
           className: "",
-          html: '<div style="width:14px;height:14px;background:#f0c040;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px #f0c040cc;animation:pulse 2s ease-in-out infinite;"></div>',
-          iconSize: [14, 14],
-          iconAnchor: [7, 7],
+          html: `<div style="text-align:center;">
+            <div style="color:#f0c040;font-size:13px;font-weight:700;white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000;margin-bottom:2px;">${data.quest}</div>
+            <img src="https://oldschool.runescape.wiki/images/Quest_point_icon.png" style="width:28px;height:28px;image-rendering:pixelated;filter:drop-shadow(0 0 6px #f0c040);" />
+          </div>`,
+          iconSize: [120, 48],
+          iconAnchor: [60, 48],
         }),
         zIndexOffset: 900,
       }).addTo(questLayer);
-      marker.bindTooltip(`Quest target: ${data.quest}`, { direction: "top" });
+      marker.bindTooltip(`${data.quest} (${wp.x}, ${wp.y})`, { direction: "top", offset: [0, -10] });
       questTargetMarker = marker;
     });
   }
@@ -262,6 +277,69 @@ function handleQuestHelper(data) {
       { color: "#f0c040", weight: 3, opacity: 0.7, dashArray: "8,6" }
     ).addTo(questLayer);
   }
+}
+
+// ── Clue Scroll Rendering ───────────────────────────────
+
+const clueLayer = L.layerGroup().addTo(map);
+let clueMarker = null;
+let clueInfoEl = null;
+
+function handleClueScroll(data) {
+  clueLayer.clearLayers();
+  clueMarker = null;
+
+  if (!data.location) {
+    if (clueInfoEl) clueInfoEl.style.display = "none";
+    return;
+  }
+
+  // Show clue info
+  if (!clueInfoEl) {
+    clueInfoEl = document.createElement("div");
+    clueInfoEl.id = "clue-info";
+    clueInfoEl.style.cssText = "position:fixed;top:56px;left:60px;z-index:1000;background:rgba(13,17,23,0.92);border:1px solid #30363d;border-radius:8px;padding:10px 14px;backdrop-filter:blur(10px);max-width:340px;";
+    document.body.appendChild(clueInfoEl);
+  }
+  clueInfoEl.style.display = "block";
+
+  // Format clue text — highlight items, equipment, locations
+  let formattedText = data.text || "";
+  // Highlight "equip" and items in green/red
+  formattedText = formattedText
+    .replace(/(equip|wear|wield)/gi, '<span style="color:#4CAF50;font-weight:600;">$1</span>')
+    .replace(/(unequip|remove|nothing)/gi, '<span style="color:#EF5350;font-weight:600;">$1</span>')
+    .replace(/(dig|search|talk to|speak to|open|use|dance|wave|clap|bow|cry|laugh|jig|spin|headbang|salute|cheer|beckon|jump|yawn|shrug|blow kiss|panic|raspberry|stomp|flap|slap head)/gi, '<span style="color:#FFA726;font-weight:600;">$1</span>');
+
+  const locName = data.locationName || "";
+  clueInfoEl.innerHTML = `
+    <div style="color:#8b5cf6;font-size:14px;font-weight:700;">🗺️ Clue: ${data.clueType || "Scroll"}</div>
+    ${locName ? `<div style="color:#58a6ff;font-size:13px;margin-top:4px;font-weight:600;">${locName}</div>` : ""}
+    ${formattedText ? `<div style="color:#e8e8e8;font-size:13px;margin-top:6px;line-height:1.5;">${formattedText}</div>` : ""}
+    <div style="color:#8b949e;font-size:11px;margin-top:8px;">(${data.location.x}, ${data.location.y})</div>
+    <button id="clue-goto" style="background:#1f6feb;color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;margin-top:6px;width:100%;">Go to location</button>
+  `;
+
+  document.getElementById("clue-goto")?.addEventListener("click", () => {
+    map.setView(gameToLatLng(data.location.x, data.location.y), 2, { animate: true });
+  });
+
+  // Place marker with clue scroll icon
+  const loc = data.location;
+  const clueLabel = data.clueType || "Clue";
+  clueMarker = L.marker(gameToLatLng(loc.x, loc.y), {
+    icon: L.divIcon({
+      className: "",
+      html: `<div style="text-align:center;">
+        <div style="color:#ffffff;font-size:15px;font-weight:700;white-space:nowrap;text-shadow:2px 2px 3px #000,0 0 8px #000,-1px -1px 2px #000;margin-bottom:4px;">${clueLabel}</div>
+        <img src="https://oldschool.runescape.wiki/images/Clue_scroll_%28medium%29.png" style="width:32px;height:32px;image-rendering:pixelated;filter:drop-shadow(0 0 8px #8b5cf6);" />
+      </div>`,
+      iconSize: [120, 52],
+      iconAnchor: [60, 52],
+    }),
+    zIndexOffset: 900,
+  }).addTo(clueLayer);
+  clueMarker.bindTooltip(`${clueLabel} (${loc.x}, ${loc.y})`, { direction: "top", offset: [0, -10] });
 }
 
 // ── Data Source: RuneRadar WebSocket ─────────────────────
@@ -282,6 +360,7 @@ function connectWebSocket() {
       const data = JSON.parse(event.data);
       if (data.type === "position") updatePosition(data.x, data.y, data);
       else if (data.type === "questHelper") handleQuestHelper(data);
+      else if (data.type === "clueScroll") handleClueScroll(data);
       else if (data.type === "logout") handleLogout();
     } catch {}
   };
@@ -347,7 +426,9 @@ function handleLogout() {
   if (playerMarker) { map.removeLayer(playerMarker); playerMarker = null; }
   if (playerLabelMarker) { map.removeLayer(playerLabelMarker); playerLabelMarker = null; }
   questLayer.clearLayers();
+  clueLayer.clearLayers();
   if (questInfoEl) questInfoEl.style.display = "none";
+  if (clueInfoEl) clueInfoEl.style.display = "none";
   hidePlayerInfo();
   switchPlane(0);
   setStatus("Player logged out", "disconnected");
@@ -362,7 +443,7 @@ document.addEventListener("keydown", (e) => {
   if (e.code === "Space" && playerMarker) {
     e.preventDefault();
     followPlayer = true;
-    map.panTo(playerMarker.getLatLng());
+    map.setView(playerMarker.getLatLng(), Math.max(map.getZoom(), 1), { animate: true });
   }
 });
 
@@ -412,8 +493,9 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
   const transportLayers = loadTransportLayers(map, gameToLatLng);
   Object.assign(overlayLayers, transportLayers);
 
-  // Quest helper layer
+  // Quest & clue layers
   overlayLayers["Quest Waypoints"] = questLayer;
+  overlayLayers["Clue Scroll"] = clueLayer;
 
   const control = L.control.layers(null, overlayLayers, {
     position: "topright",
@@ -434,6 +516,13 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
     </div>
     ${makeSettingsCheckbox("settingsFollow", "Auto-follow player", autoFollow)}
     ${makeSettingsCheckbox("settingsLabel", "Show name label", showLocationLabel)}
+    <div class="settings-title" style="margin-top:8px">Font Sizes</div>
+    <div class="settings-row">
+      <label>Scale</label>
+      <input type="range" id="settingsFontScale" min="0.5" max="3" step="0.25" value="${fontScale}"
+        style="flex:1;accent-color:#58a6ff;" />
+      <span id="fontScaleLabel" style="color:#8b949e;font-size:11px;min-width:30px;text-align:right;">${fontScale}x</span>
+    </div>
     <div class="settings-title" style="margin-top:8px">UI Visibility</div>
     ${makeSettingsCheckbox("settingsInfoPanel", "Player info panel", true)}
     ${makeSettingsCheckbox("settingsSearch", "Search bar", true)}
@@ -487,6 +576,19 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
       }).addTo(map);
     }
   });
+
+  // Font scale slider
+  const fontSlider = document.getElementById("settingsFontScale");
+  const fontLabel = document.getElementById("fontScaleLabel");
+  if (fontSlider) {
+    fontSlider.addEventListener("input", (e) => {
+      fontScale = parseFloat(e.target.value);
+      fontLabel.textContent = fontScale + "x";
+      localStorage.setItem("runeradar-fontscale", fontScale);
+      // Trigger label redraw
+      if (typeof window.updateAllLabels === "function") window.updateAllLabels();
+    });
+  }
 
   // UI visibility toggles
   let showInfoPanel = true;
