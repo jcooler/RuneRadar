@@ -42,6 +42,9 @@ public class RuneRadarPlugin extends Plugin
     private ClueScrollBridge clueBridge;
     private String lastQuestData;
     private String lastClueData;
+    private int questNullTicks;
+    private int clueNullTicks;
+    private static final int NULL_CLEAR_THRESHOLD = 10; // ~6 seconds at 0.6s/tick
 
     @Provides
     RuneRadarConfig provideConfig(ConfigManager configManager)
@@ -133,21 +136,30 @@ public class RuneRadarPlugin extends Plugin
                 server.broadcast(data);
             }
 
-            // Send quest helper data if available (every tick, only if changed)
+            // Send quest helper data — persist through brief nulls, clear after sustained null
             if (questBridge != null)
             {
                 try
                 {
                     String questData = questBridge.getQuestWaypointsJson();
-                    if (questData != null && !questData.equals(lastQuestData))
+                    if (questData != null)
                     {
-                        lastQuestData = questData;
-                        server.broadcastRaw(questData);
+                        questNullTicks = 0;
+                        if (!questData.equals(lastQuestData))
+                        {
+                            lastQuestData = questData;
+                            server.broadcastRaw(questData);
+                        }
                     }
-                    else if (questData == null && lastQuestData != null)
+                    else if (lastQuestData != null)
                     {
-                        lastQuestData = null;
-                        server.broadcastRaw("{\"type\":\"questHelper\",\"quest\":null}");
+                        questNullTicks++;
+                        if (questNullTicks >= NULL_CLEAR_THRESHOLD)
+                        {
+                            lastQuestData = null;
+                            questNullTicks = 0;
+                            server.broadcastRaw("{\"type\":\"questHelper\",\"quest\":null}");
+                        }
                     }
                 }
                 catch (Exception e)
@@ -156,21 +168,30 @@ public class RuneRadarPlugin extends Plugin
                 }
             }
 
-            // Send clue scroll data if available
+            // Send clue scroll data — same pattern
             if (clueBridge != null)
             {
                 try
                 {
                     String clueData = clueBridge.getClueDataJson();
-                    if (clueData != null && !clueData.equals(lastClueData))
+                    if (clueData != null)
                     {
-                        lastClueData = clueData;
-                        server.broadcastRaw(clueData);
+                        clueNullTicks = 0;
+                        if (!clueData.equals(lastClueData))
+                        {
+                            lastClueData = clueData;
+                            server.broadcastRaw(clueData);
+                        }
                     }
-                    else if (clueData == null && lastClueData != null)
+                    else if (lastClueData != null)
                     {
-                        lastClueData = null;
-                        server.broadcastRaw("{\"type\":\"clueScroll\",\"location\":null}");
+                        clueNullTicks++;
+                        if (clueNullTicks >= NULL_CLEAR_THRESHOLD)
+                        {
+                            lastClueData = null;
+                            clueNullTicks = 0;
+                            server.broadcastRaw("{\"type\":\"clueScroll\",\"location\":null}");
+                        }
                     }
                 }
                 catch (Exception e)
