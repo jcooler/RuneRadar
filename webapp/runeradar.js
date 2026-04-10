@@ -100,11 +100,12 @@ function makePlayerIcon(color) {
 }
 
 function makePlayerLabel(name) {
+  const size = Math.round(16 * fontScale);
   return L.divIcon({
     className: "player-label",
-    html: name || "Your Location",
-    iconSize: [100, 20],
-    iconAnchor: [50, 30],
+    html: `<span style="font-size:${size}px">${name || "Your Location"}</span>`,
+    iconSize: [120, 24],
+    iconAnchor: [60, 34],
   });
 }
 
@@ -253,12 +254,14 @@ function handleQuestHelper(data) {
   // Draw target waypoint markers with quest icon
   if (data.waypoints && data.waypoints.length > 0) {
     data.waypoints.forEach((wp) => {
+      const questFontSize = Math.round(13 * fontScale);
+      const questIconSize = Math.round(28 * fontScale);
       const marker = L.marker(gameToLatLng(wp.x, wp.y), {
         icon: L.divIcon({
           className: "",
           html: `<div style="text-align:center;">
-            <div style="color:#f0c040;font-size:13px;font-weight:700;white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000;margin-bottom:2px;">${data.quest}</div>
-            <img src="https://oldschool.runescape.wiki/images/Quest_point_icon.png" style="width:28px;height:28px;image-rendering:pixelated;filter:drop-shadow(0 0 6px #f0c040);" />
+            <div style="color:#f0c040;font-size:${questFontSize}px;font-weight:700;white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000;margin-bottom:2px;">${data.quest}</div>
+            <img src="https://oldschool.runescape.wiki/images/Quest_point_icon.png" style="width:${questIconSize}px;height:${questIconSize}px;image-rendering:pixelated;filter:drop-shadow(0 0 6px #f0c040);" />
           </div>`,
           iconSize: [120, 48],
           iconAnchor: [60, 48],
@@ -327,12 +330,14 @@ function handleClueScroll(data) {
   // Place marker with clue scroll icon
   const loc = data.location;
   const clueLabel = data.clueType || "Clue";
+  const clueFontSize = Math.round(15 * fontScale);
+  const clueIconSize = Math.round(32 * fontScale);
   clueMarker = L.marker(gameToLatLng(loc.x, loc.y), {
     icon: L.divIcon({
       className: "",
       html: `<div style="text-align:center;">
-        <div style="color:#ffffff;font-size:15px;font-weight:700;white-space:nowrap;text-shadow:2px 2px 3px #000,0 0 8px #000,-1px -1px 2px #000;margin-bottom:4px;">${clueLabel}</div>
-        <img src="https://oldschool.runescape.wiki/images/Clue_scroll_%28medium%29.png" style="width:32px;height:32px;image-rendering:pixelated;filter:drop-shadow(0 0 8px #8b5cf6);" />
+        <div style="color:#ffffff;font-size:${clueFontSize}px;font-weight:700;white-space:nowrap;text-shadow:2px 2px 3px #000,0 0 8px #000,-1px -1px 2px #000;margin-bottom:4px;">${clueLabel}</div>
+        <img src="https://oldschool.runescape.wiki/images/Clue_scroll_%28medium%29.png" style="width:${clueIconSize}px;height:${clueIconSize}px;image-rendering:pixelated;filter:drop-shadow(0 0 8px #8b5cf6);" />
       </div>`,
       iconSize: [120, 52],
       iconAnchor: [60, 52],

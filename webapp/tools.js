@@ -61,7 +61,7 @@ function initSearch(map, gameToLatLng) {
       div.className = "search-result";
       div.innerHTML = `<span class="sr-name">${loc.name}</span><span class="sr-type">${loc.type}</span>`;
       div.addEventListener("click", () => { map.setView(gameToLatLng(loc.x, loc.y), 2); searchResults.style.display = "none"; searchInput.value = loc.name; searchInput.blur(); });
-      div.addEventListener("mouseenter", () => { selectedIdx = i; items = searchResults.querySelectorAll(".search-result"); items.forEach((el, j) => el.classList.toggle("active", j === i)); });
+      div.addEventListener("mouseenter", () => { selectedIdx = i; const els = searchResults.querySelectorAll(".search-result"); els.forEach((el, j) => el.classList.toggle("active", j === i)); });
       searchResults.appendChild(div);
     });
   });
@@ -97,18 +97,16 @@ function initCoordinateTools(map) {
 function showConfirm(title, msg, onConfirm, btnLabel) {
   const ov = document.getElementById("modal-overlay");
   const cm = document.getElementById("confirm-modal");
-  document.getElementById("confirm-title").textContent = title;
-  document.getElementById("confirm-msg").textContent = msg;
-  ov.style.display = "block"; cm.style.display = "block";
-  function hide() { ov.style.display = "none"; cm.style.display = "none"; }
   const yes = document.getElementById("confirm-yes");
   const no = document.getElementById("confirm-no");
-  const yesClone = yes.cloneNode(true); yes.replaceWith(yesClone);
-  const noClone = no.cloneNode(true); no.replaceWith(noClone);
-  yesClone.textContent = btnLabel || "Delete All";
-  yesClone.addEventListener("click", () => { hide(); onConfirm(); }, { once: true });
-  noClone.addEventListener("click", hide, { once: true });
-  ov.addEventListener("click", hide, { once: true });
+  document.getElementById("confirm-title").textContent = title;
+  document.getElementById("confirm-msg").textContent = msg;
+  yes.textContent = btnLabel || "Delete All";
+  ov.style.display = "block"; cm.style.display = "block";
+  function hide() { ov.style.display = "none"; cm.style.display = "none"; yes.onclick = null; no.onclick = null; ov.onclick = null; }
+  yes.onclick = () => { hide(); onConfirm(); };
+  no.onclick = hide;
+  ov.onclick = hide;
 }
 
 function showToast(msg) {
@@ -143,7 +141,8 @@ function initDistanceTool(map, gameToLatLng) {
       if (measureLabel) map.removeLayer(measureLabel);
       measureLine = L.polyline([startPoint.latlng, e.latlng], { color: "#58a6ff", weight: 2, dashArray: "6,4" }).addTo(map);
       const mid = gameToLatLng((startPoint.x + x) / 2, (startPoint.y + y) / 2);
-      measureLabel = L.marker(mid, { icon: L.divIcon({ className: "measure-label", html: `${dist} tiles`, iconSize: [0, 0] }), interactive: false }).addTo(map);
+      const mSize = Math.round(16 * (typeof fontScale !== "undefined" ? fontScale : 1));
+      measureLabel = L.marker(mid, { icon: L.divIcon({ className: "measure-label", html: `<span style="font-size:${mSize}px">${dist} tiles</span>`, iconSize: [0, 0] }), interactive: false }).addTo(map);
       startPoint = null;
     }
   });
@@ -203,8 +202,9 @@ function initCustomMarkers(map, gameToLatLng) {
   noteInput.addEventListener("keydown", (e) => { if (e.key === "Enter") saveBtn.click(); if (e.key === "Escape") hideModal(); });
 
   function addPin(x, y, note) {
+    const pinFs = Math.round(13 * (typeof fontScale !== "undefined" ? fontScale : 1));
     const marker = L.marker(gameToLatLng(x, y), {
-      icon: L.divIcon({ className: "custom-pin", html: `📍${note ? `<div class="pin-label">${note}</div>` : ""}`, iconSize: [24, 24], iconAnchor: [12, 24] }),
+      icon: L.divIcon({ className: "custom-pin", html: `📍${note ? `<div class="pin-label" style="font-size:${pinFs}px">${note}</div>` : ""}`, iconSize: [24, 24], iconAnchor: [12, 24] }),
     }).addTo(markerLayer);
     marker._pinData = { x, y, note };
     marker.on("contextmenu", (e) => { e.originalEvent.preventDefault(); showConfirm(`Remove "${note || "Pin"}"?`, `Delete this pin at (${x}, ${y})?`, () => { markerLayer.removeLayer(marker); saveAllPins(); }, "Remove Pin"); });
@@ -363,9 +363,11 @@ function loadTransportLayers(map, gameToLatLng) {
 
   // Fairy rings
   const fairyLayer = L.layerGroup();
+  const fs = typeof fontScale !== "undefined" ? fontScale : 1;
   FAIRY_RINGS.forEach((fr) => {
+    const fSize = Math.round(12 * fs);
     L.marker(gameToLatLng(fr.x, fr.y), {
-      icon: L.divIcon({ className: "transport-icon fairy-ring", html: `<span>${fr.code}</span>`, iconSize: [42, 20], iconAnchor: [21, 30] }),
+      icon: L.divIcon({ className: "transport-icon fairy-ring", html: `<span style="font-size:${fSize}px">${fr.code}</span>`, iconSize: [42, 20], iconAnchor: [21, 30] }),
     }).addTo(fairyLayer).bindTooltip(`${fr.code} — ${fr.name}`, { direction: "top", offset: [0, -12] });
   });
   fairyLayer.addTo(map);

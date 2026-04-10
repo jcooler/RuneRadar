@@ -109,7 +109,7 @@ public class QuestHelperBridge
                             selectedQuest = m.invoke(questManager);
                             if (selectedQuest != null)
                             {
-                                log.info("RuneRadar: Found quest via questManager.{}()", methodName);
+                                log.debug("RuneRadar: Found quest via questManager.{}()", methodName);
                                 break;
                             }
                         }
@@ -130,7 +130,7 @@ public class QuestHelperBridge
                                     && !typeName.contains("Manager") && !typeName.contains("Config")
                                     && !typeName.contains("Panel") && !typeName.contains("Menu"))
                                 {
-                                    log.info("RuneRadar QuestMgrDebug: field '{}' type={} class={}",
+                                    log.debug("RuneRadar QuestMgrDebug: field '{}' type={} class={}",
                                         f.getName(), typeName, val.getClass().getSimpleName());
                                     selectedQuest = val;
                                 }
@@ -178,7 +178,7 @@ public class QuestHelperBridge
                     currentStep = m.invoke(selectedQuest);
                     if (currentStep != null)
                     {
-                        log.info("RuneRadar: Got step via {}(): {}", mName, currentStep.getClass().getSimpleName());
+                        log.debug("RuneRadar: Got step via {}(): {}", mName, currentStep.getClass().getSimpleName());
                         break;
                     }
                 }
@@ -200,7 +200,7 @@ public class QuestHelperBridge
                             String tName = val.getClass().getSimpleName();
                             if (tName.contains("Step") || tName.contains("WorldPoint"))
                             {
-                                log.info("RuneRadar QuestStepScan: field '{}' type={}", f.getName(), tName);
+                                log.debug("RuneRadar QuestStepScan: field '{}' type={}", f.getName(), tName);
                                 if (tName.contains("Step")) currentStep = val;
                             }
                         }
@@ -310,7 +310,7 @@ public class QuestHelperBridge
                         int y = (int) gy.invoke(definedPoint);
                         int p = (int) gp.invoke(definedPoint);
                         foundWp = new WorldPoint(x, y, p);
-                        log.info("RuneRadar: Found quest WP via DefinedPoint: {}", foundWp);
+                        log.debug("RuneRadar: Found quest WP via DefinedPoint: {}", foundWp);
                     }
                     catch (Exception e)
                     {
@@ -319,7 +319,7 @@ public class QuestHelperBridge
                         {
                             Method gwp = definedPoint.getClass().getMethod("getWorldPoint");
                             foundWp = (WorldPoint) gwp.invoke(definedPoint);
-                            log.info("RuneRadar: Found quest WP via DefinedPoint.getWorldPoint(): {}", foundWp);
+                            log.debug("RuneRadar: Found quest WP via DefinedPoint.getWorldPoint(): {}", foundWp);
                         }
                         catch (Exception ignored) {}
                     }
@@ -337,7 +337,7 @@ public class QuestHelperBridge
                     {
                         Method gwp = mapPoint.getClass().getMethod("getWorldPoint");
                         foundWp = (WorldPoint) gwp.invoke(mapPoint);
-                        log.info("RuneRadar: Found quest WP via mapPoint: {}", foundWp);
+                        log.debug("RuneRadar: Found quest WP via mapPoint: {}", foundWp);
                     }
                 }
                 catch (Exception ignored) {}
@@ -359,7 +359,7 @@ public class QuestHelperBridge
                             if (val instanceof WorldPoint)
                             {
                                 foundWp = (WorldPoint) val;
-                                log.info("RuneRadar: Found quest WP in {}.{}: {}", stepClass.getSimpleName(), f.getName(), foundWp);
+                                log.debug("RuneRadar: Found quest WP in {}.{}: {}", stepClass.getSimpleName(), f.getName(), foundWp);
                                 break;
                             }
                         }
@@ -389,7 +389,7 @@ public class QuestHelperBridge
                                     if (item instanceof WorldPoint)
                                     {
                                         foundWp = (WorldPoint) item;
-                                        log.info("RuneRadar: Found quest WP in list {}.{}: {}", stepClass.getSimpleName(), f.getName(), foundWp);
+                                        log.debug("RuneRadar: Found quest WP in list {}.{}: {}", stepClass.getSimpleName(), f.getName(), foundWp);
                                         break;
                                     }
                                 }

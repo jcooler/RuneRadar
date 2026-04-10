@@ -272,9 +272,8 @@ async function loadMapOverlays(map, gameToLatLng) {
       layers[cat] = layer;
     }
 
-    console.log(`RuneRadar: Loaded ${count} map icons`);
   } catch (err) {
-    console.error("RuneRadar: Failed to load map icons", err);
+    // Icon loading failed silently — map still works without POI icons
   }
 
   return layers;

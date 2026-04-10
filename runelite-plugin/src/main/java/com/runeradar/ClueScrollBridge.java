@@ -131,7 +131,7 @@ public class ClueScrollBridge
                             if (val instanceof WorldPoint)
                             {
                                 location = (WorldPoint) val;
-                                log.info("RuneRadar: Found location in field '{}'", f.getName());
+                                log.debug("RuneRadar: Found location in field '{}'", f.getName());
                                 break;
                             }
                             // Check if the field is an enum/object that HAS a WorldPoint
@@ -147,7 +147,7 @@ public class ClueScrollBridge
                                     if (wp instanceof WorldPoint)
                                     {
                                         location = (WorldPoint) wp;
-                                        log.info("RuneRadar: Found location via {}.getWorldPoint()", f.getName());
+                                        log.debug("RuneRadar: Found location via {}.getWorldPoint()", f.getName());
                                         break;
                                     }
                                 }
@@ -161,7 +161,7 @@ public class ClueScrollBridge
                                     if (wp instanceof WorldPoint)
                                     {
                                         location = (WorldPoint) wp;
-                                        log.info("RuneRadar: Found location via {}.getLocation()", f.getName());
+                                        log.debug("RuneRadar: Found location via {}.getLocation()", f.getName());
                                         break;
                                     }
                                 }
@@ -177,7 +177,7 @@ public class ClueScrollBridge
                                         if (nval instanceof WorldPoint)
                                         {
                                             location = (WorldPoint) nval;
-                                            log.info("RuneRadar: Found location in {}.{}", f.getName(), nf.getName());
+                                            log.debug("RuneRadar: Found location in {}.{}", f.getName(), nf.getName());
                                             break;
                                         }
                                     }
