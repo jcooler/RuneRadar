@@ -295,6 +295,9 @@ function handleLogout() {
 // ── Keyboard Shortcuts ──────────────────────────────────
 
 document.addEventListener("keydown", (e) => {
+  // Don't capture shortcuts when typing in an input field
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
   if (e.code === "Space" && playerMarker) {
     e.preventDefault();
     followPlayer = true;
