@@ -374,18 +374,17 @@ function renderMember(data, isOffline = false) {
   const activity = escHtml(data.activity || "");
   const via = (data.via || []).map(v => v === "friends" ? "Friend" : v === "clan" ? "Clan" : "FC").join(", ");
 
-  // Hover tooltip data
-  const tooltipParts = [];
-  if (activity) tooltipParts.push(activity);
-  if (via) tooltipParts.push(via);
-  const tooltip = tooltipParts.length > 0 ? escHtml(tooltipParts.join(" · ")) : "";
-
   return `<div class="social-member${hasPos ? " clickable" : ""}${offlineClass}"
-    ${hasPos ? `data-peer-rsn="${safeRsn}"` : ""}
-    ${tooltip ? `title="${tooltip}"` : ""}>
+    ${hasPos ? `data-peer-rsn="${safeRsn}"` : ""}>
     <span class="social-member-dot" style="background:${color}"></span>
     <span class="social-member-name">${safeRsn}</span>
     <span class="social-member-info">${isOffline ? "Offline" : worldTag}</span>
+    <div class="social-hover-card">
+      <div class="social-hover-name" style="color:${color}">${safeRsn}</div>
+      ${worldTag ? `<div class="social-hover-world">${worldTag}</div>` : ""}
+      ${activity ? `<div class="social-hover-activity">${activity}</div>` : ""}
+      <div class="social-hover-via">${via || "Friend"}</div>
+    </div>
   </div>`;
 }
 
