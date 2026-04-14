@@ -383,14 +383,14 @@ function renderMember(data, isOffline = false) {
   const activity = escHtml(data.activity || "");
   const via = (data.via || []).map(v => v === "friends" ? "Friend" : v === "clan" ? "Clan" : "FC").join(", ");
 
-  const details = [activity, via].filter(Boolean).join(" · ");
-
-  return `<div class="social-member${hasPos ? " clickable" : ""}${offlineClass}"
+  return `<div class="social-member${offlineClass}"
     ${hasPos ? `data-peer-rsn="${safeRsn}"` : ""}>
-    <span class="social-member-dot" style="background:${color}"></span>
-    <span class="social-member-name">${safeRsn}</span>
-    <span class="social-member-info">${isOffline ? "Offline" : worldTag}</span>
-    ${details ? `<div class="social-member-details"><span class="social-member-activity">${activity}</span>${activity && via ? " · " : ""}<span class="social-member-via">${via}</span></div>` : ""}
+    <div class="social-member-row">
+      <span class="social-member-dot" style="background:${color}"></span>
+      <span class="social-member-name">${safeRsn}</span>
+      <span class="social-member-info">${isOffline ? "Offline" : worldTag}</span>
+    </div>
+    ${activity ? `<span class="social-member-activity">${activity}</span>` : ""}
   </div>`;
 }
 
