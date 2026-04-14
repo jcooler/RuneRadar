@@ -54,14 +54,25 @@ const VIA_ICONS = {
   fc: "https://oldschool.runescape.wiki/images/Chat-channel.png",
 };
 
-// World number → flag emoji (OSRS world regions)
-function getWorldFlag(world) {
-  if (!world) return "";
-  // US worlds: 301-399 (most), UK: 401-499, German: 501-524, Australian: 525-535
-  if (world >= 400 && world < 500) return "🇬🇧";
-  if (world >= 500 && world < 525) return "🇩🇪";
-  if (world >= 525 && world < 536) return "🇦🇺";
-  return "🇺🇸";
+// World number → flag image (OSRS world regions)
+const FLAG_IMGS = {
+  us: "https://flagcdn.com/w20/us.png",
+  uk: "https://flagcdn.com/w20/gb.png",
+  de: "https://flagcdn.com/w20/de.png",
+  au: "https://flagcdn.com/w20/au.png",
+};
+
+function getWorldRegion(world) {
+  if (!world) return "us";
+  if (world >= 400 && world < 500) return "uk";
+  if (world >= 500 && world < 525) return "de";
+  if (world >= 525 && world < 536) return "au";
+  return "us";
+}
+
+function getWorldFlagHtml(world) {
+  const region = getWorldRegion(world);
+  return `<img src="${FLAG_IMGS[region]}" style="height:11px;vertical-align:middle;image-rendering:pixelated;margin-right:2px;" />`;
 }
 
 function makePeerLabel(rsn, via) {
@@ -195,9 +206,8 @@ function updatePeer(data) {
     peer.data = data;
   }
 
-  const flag = getWorldFlag(data.world);
   const parts = [data.rsn];
-  if (data.world) parts.push(`${flag} World ${data.world}`);
+  if (data.world) parts.push(`W${data.world}`);
   if (data.activity) parts.push(data.activity);
   peer.marker.setTooltipContent(parts.join(" · "));
 
@@ -353,8 +363,8 @@ function renderClanTab(contentEl, countEl) {
 
 function renderMember(data, isOffline = false) {
   const color = isOffline ? "#555" : getPeerColor(data.rsn);
-  const flag = getWorldFlag(data.world);
-  const world = data.world ? `${flag} W${data.world}` : "";
+  const flagHtml = data.world ? getWorldFlagHtml(data.world) : "";
+  const world = data.world ? `${flagHtml}W${data.world}` : "";
   const activity = escHtml(data.activity || "");
   const info = [world, activity].filter(Boolean).join(" · ");
   const hasPos = data.x && data.y && !isOffline;
