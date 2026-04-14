@@ -96,14 +96,12 @@ function createSilentTile(src, done, fallbackSrc) {
 }
 
 // Local tiles (generated from OSRS game cache)
-const localTileLayer = L.tileLayer("", {
-  minZoom: -3, maxZoom: 5, maxNativeZoom: 2, tileSize: 256,
+const localTileLayer = L.tileLayer("tiles/2/{plane}_{x}_{y}.png", {
+  minZoom: -3, maxZoom: 5, maxNativeZoom: 2, minNativeZoom: 2, tileSize: 256,
+  errorTileUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
 });
 localTileLayer.getTileUrl = function (coords) {
   return `tiles/2/${currentPlane}_${coords.x}_${-(coords.y + 1)}.png`;
-};
-localTileLayer.createTile = function (coords, done) {
-  return createSilentTile(this.getTileUrl(coords), done);
 };
 localTileLayer.addTo(map);
 
@@ -611,9 +609,12 @@ initPathDrawing(map, gameToLatLng);
 
 // ── Minimap ─────────────────────────────────────────────
 
-const minimapTiles = L.tileLayer("", { minZoom: -3, maxZoom: 5, maxNativeZoom: 2, tileSize: 256 });
-minimapTiles.createTile = function (coords, done) {
-  return createSilentTile(`tiles/2/0_${coords.x}_${-(coords.y + 1)}.png`, done);
+const minimapTiles = L.tileLayer("tiles/2/0_{x}_{y}.png", {
+  minZoom: -3, maxZoom: 5, maxNativeZoom: 2, minNativeZoom: 2, tileSize: 256,
+  errorTileUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+});
+minimapTiles.getTileUrl = function (coords) {
+  return `tiles/2/0_${coords.x}_${-(coords.y + 1)}.png`;
 };
 const minimap = new L.Control.MiniMap(minimapTiles, {
   position: "bottomleft",
