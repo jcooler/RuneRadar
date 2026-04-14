@@ -58,7 +58,7 @@ function makePeerLabel(rsn, world, via) {
   const worldTag = world ? ` W${world}` : "";
   const viaType = (via && via.length > 0) ? via[0] : null;
   const viaIcon = viaType && VIA_ICONS[viaType]
-    ? `<img src="${VIA_ICONS[viaType]}" style="height:18px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;" />`
+    ? `<img src="${VIA_ICONS[viaType]}" style="height:24px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;" />`
     : "";
   return L.divIcon({
     className: "peer-label",
