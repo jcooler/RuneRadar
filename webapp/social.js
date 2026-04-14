@@ -54,19 +54,26 @@ const VIA_ICONS = {
   fc: "https://oldschool.runescape.wiki/images/Chat-channel.png",
 };
 
-// World number → flag image (OSRS world regions)
+// World number → flag image (OSRS world regions — per-world lookup)
 const FLAG_IMGS = {
   us: "https://flagcdn.com/w20/us.png",
   uk: "https://flagcdn.com/w20/gb.png",
   de: "https://flagcdn.com/w20/de.png",
   au: "https://flagcdn.com/w20/au.png",
+  br: "https://flagcdn.com/w20/br.png",
 };
+
+const UK_WORLDS = new Set([302,308,309,310,316,317,318,325,326,333,334,341,342,349,350,358,363,364,365,366,371,372,373,379,380,381,382,407,408,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,558,559,560,561,562,563,564,565,566,567,587,619,620,621,622,623,661,662,663,664,665,666,667,668,669,670]);
+const DE_WORLDS = new Set([303,304,311,312,327,328,335,336,343,344,351,352,359,360,367,368,375,376,383,384,395,396,397,398,399,405,406,413,414,447,448,449,450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,548,549,550,551,552,553,554,555,556,557,582,586,624,625,626,627,628,677,678,679,680,681,682,683,684,685,686]);
+const AU_WORLDS = new Set([387,388,389,390,391,392,412,424,425,426,427,526,527,528,529,530,531,532,533,534,535,536,537,568,569,570,571,572,585,590,591,592,593,594,595,687,688,689,690,691]);
+const BR_WORLDS = new Set([692,693,694,695]);
 
 function getWorldRegion(world) {
   if (!world) return "us";
-  if (world >= 400 && world < 500) return "uk";
-  if (world >= 500 && world < 525) return "de";
-  if (world >= 525 && world < 536) return "au";
+  if (UK_WORLDS.has(world)) return "uk";
+  if (DE_WORLDS.has(world)) return "de";
+  if (AU_WORLDS.has(world)) return "au";
+  if (BR_WORLDS.has(world)) return "br";
   return "us";
 }
 
@@ -277,10 +284,33 @@ function createSocialPanel() {
     });
   });
 
-  // Delegated click handler for peer members (replaces inline onclick)
-  document.getElementById("social-tab-content").addEventListener("click", (e) => {
+  // Delegated click handler for peer members
+  const tabContent = document.getElementById("social-tab-content");
+  tabContent.addEventListener("click", (e) => {
     const member = e.target.closest("[data-peer-rsn]");
     if (member) panToPeer(member.dataset.peerRsn);
+  });
+
+  // Hover card positioning
+  tabContent.addEventListener("mouseover", (e) => {
+    const member = e.target.closest(".social-member");
+    if (!member) return;
+    const card = member.querySelector(".social-hover-card");
+    if (!card) return;
+    const rect = member.getBoundingClientRect();
+    card.style.left = (rect.left - 10) + "px";
+    card.style.top = (rect.top - card.offsetHeight - 8) + "px";
+    // If card goes above viewport, show below instead
+    if (rect.top - card.offsetHeight - 8 < 0) {
+      card.style.top = (rect.bottom + 8) + "px";
+    }
+    card.classList.add("visible");
+  });
+  tabContent.addEventListener("mouseout", (e) => {
+    const member = e.target.closest(".social-member");
+    if (!member) return;
+    const card = member.querySelector(".social-hover-card");
+    if (card) card.classList.remove("visible");
   });
 
   updateSocialPanel();

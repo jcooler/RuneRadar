@@ -200,7 +200,8 @@ function updatePlayerInfo(data) {
   nameEl.textContent = currentPlayerName;
   const floor = FLOOR_NAMES[data.plane] || `Floor ${data.plane}`;
   const instanceTag = data.instanced ? " · Instanced" : "";
-  coordsEl.textContent = `(${data.x}, ${data.y}) ${floor}${data.world ? " · W" + data.world : ""}${instanceTag}`;
+  const flagImg = data.world && typeof getWorldFlagHtml === "function" ? getWorldFlagHtml(data.world) : "";
+  coordsEl.innerHTML = `(${data.x}, ${data.y}) ${floor}${data.world ? " · " + flagImg + "W" + data.world : ""}${instanceTag}`;
   hpEl.textContent = data.hitpoints || "?";
   prayEl.textContent = data.prayer || "?";
   runEl.textContent = data.runEnergy || "?";

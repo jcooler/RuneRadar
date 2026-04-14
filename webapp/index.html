@@ -345,16 +345,16 @@
       white-space: nowrap;
     }
     .social-hover-card {
-      display: none; position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px;
-      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
-      padding: 12px 16px; min-width: 260px; z-index: 1300; white-space: nowrap;
-      box-shadow: 0 6px 20px var(--shadow); backdrop-filter: blur(12px);
+      display: none; position: fixed; z-index: 1400;
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 18px; width: 240px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4); backdrop-filter: blur(14px);
     }
     .social-member { position: relative; }
-    .social-member:hover .social-hover-card { display: block; }
-    .social-hover-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-    .social-hover-world { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
-    .social-hover-activity { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+    .social-hover-card.visible { display: block; }
+    .social-hover-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .social-hover-world { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .social-hover-activity { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
     .social-hover-via { font-size: 11px; color: var(--text-muted); font-style: italic; }
     .social-member.offline { opacity: 0.5; }
     .social-member.offline .social-member-name { color: var(--text-muted); }
