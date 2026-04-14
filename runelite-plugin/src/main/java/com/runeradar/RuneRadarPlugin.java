@@ -357,6 +357,16 @@ public class RuneRadarPlugin extends Plugin
                     );
                 }
 
+                // Send social info to local webapp
+                if (heartbeat)
+                {
+                    JsonObject socialInfo = new JsonObject();
+                    socialInfo.addProperty("type", "socialInfo");
+                    socialInfo.addProperty("clan", getClanName());
+                    socialInfo.addProperty("fc", getFcName());
+                    server.broadcastRaw(GSON.toJson(socialInfo));
+                }
+
                 // Periodically send social graph updates
                 socialUpdateTickCounter++;
                 if (socialUpdateTickCounter >= SOCIAL_UPDATE_INTERVAL)

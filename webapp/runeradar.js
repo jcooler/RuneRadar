@@ -460,8 +460,12 @@ function connectWebSocket() {
       else if (data.type === "questStates") handleQuestStates(data);
       else if (data.type === "logout") handleLogout();
       else if (data.type === "peer_position" || data.type === "peer_join"
-        || data.type === "peer_leave" || data.type === "room_joined"
-        || data.type === "room_created") handlePluginPeerMessage(data);
+        || data.type === "peer_leave" || data.type === "peer_list") handlePluginPeerMessage(data);
+      else if (data.type === "socialInfo") {
+        window._localClan = data.clan || null;
+        window._localFc = data.fc || null;
+        if (typeof updateSocialPanel === "function") updateSocialPanel();
+      }
     } catch {}
   };
   ws.onclose = () => { wsConnected = false; ws = null; };

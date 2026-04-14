@@ -274,7 +274,7 @@
       background: var(--bg-panel); border: 1px solid var(--border);
       border-radius: 10px; backdrop-filter: blur(12px);
       box-shadow: 0 4px 16px var(--shadow); font-family: var(--font);
-      width: 260px; overflow: hidden; transition: all 0.2s;
+      width: 320px; overflow: hidden; transition: all 0.2s;
     }
     .social-header {
       display: flex; align-items: center; gap: 8px;
@@ -331,8 +331,8 @@
     }
     .social-group-label:first-child { border-top: none; }
     .social-member {
-      display: flex; align-items: center; gap: 8px;
-      padding: 5px 14px 5px 20px; font-size: 12px;
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px 14px 8px 20px; font-size: 12px; flex-wrap: wrap;
     }
     .social-member.clickable { cursor: pointer; }
     .social-member.clickable:hover { background: var(--bg-surface); }
@@ -341,8 +341,8 @@
     }
     .social-member-name { color: var(--text); font-weight: 600; }
     .social-member-info {
-      color: var(--text-muted); font-size: 11px; margin-left: auto;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+      color: var(--text-muted); font-size: 11px; width: 100%;
+      padding-left: 16px;
     }
     .social-member.offline { opacity: 0.5; }
     .social-member.offline .social-member-name { color: var(--text-muted); }

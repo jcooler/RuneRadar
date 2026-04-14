@@ -326,7 +326,8 @@ function renderFriendsTab(contentEl, countEl) {
 }
 
 function renderClanTab(contentEl, countEl) {
-  const clan = { name: null, members: [] };
+  const clanName = window._localClan || null;
+  const clan = { name: clanName, members: [] };
 
   // Add real peers tagged as clan
   const clanMembers = [...clan.members];
@@ -354,6 +355,8 @@ function renderClanTab(contentEl, countEl) {
     for (const m of clanMembers) {
       html += renderMember(m);
     }
+  } else if (clan.name) {
+    html += `<div class="social-empty">No clan members online with RuneRadar</div>`;
   } else {
     html = `<div class="social-empty">Join a clan in-game and enable clan sharing in the plugin</div>`;
   }
