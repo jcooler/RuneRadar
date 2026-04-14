@@ -245,10 +245,22 @@ public class RuneRadarPlugin extends Plugin
     private String detectActivity(boolean instanced)
     {
         if (instanced) return "In an instance";
+
+        // Check for active quest or clue first
+        String prefix = "";
+        if (lastQuestData != null && !lastQuestData.contains("\"quest\":null"))
+        {
+            prefix = "Embarking on a quest";
+        }
+        else if (lastClueData != null && !lastClueData.contains("\"location\":null"))
+        {
+            prefix = "Following the clues";
+        }
+
+        // Get location name from game widget
+        String location = "";
         try
         {
-            // Try multiple widget IDs for the area/location name
-            // Widget 90.39 = area text, 10551322 = minimap location text
             int[][] widgetIds = {{90, 39}, {90, 38}, {90, 36}, {160, 22}, {161, 22}};
             for (int[] wid : widgetIds)
             {
@@ -256,7 +268,8 @@ public class RuneRadarPlugin extends Plugin
                 if (w != null && w.getText() != null && !w.getText().isEmpty()
                     && !w.getText().equals("null"))
                 {
-                    return w.getText();
+                    location = w.getText();
+                    break;
                 }
             }
         }
@@ -264,7 +277,16 @@ public class RuneRadarPlugin extends Plugin
         {
             log.debug("RuneRadar: Error detecting activity", e);
         }
-        return "";
+
+        if (!prefix.isEmpty() && !location.isEmpty())
+        {
+            return prefix + " in " + location;
+        }
+        else if (!prefix.isEmpty())
+        {
+            return prefix;
+        }
+        return location;
     }
 
     @Subscribe
