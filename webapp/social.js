@@ -58,7 +58,7 @@ function makePeerLabel(rsn, world, via) {
   const worldTag = world ? ` W${world}` : "";
   const viaType = (via && via.length > 0) ? via[0] : null;
   const viaIcon = viaType && VIA_ICONS[viaType]
-    ? `<img src="${VIA_ICONS[viaType]}" style="height:12px;vertical-align:middle;image-rendering:pixelated;margin-right:3px;" />`
+    ? `<img src="${VIA_ICONS[viaType]}" style="height:18px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;" />`
     : "";
   return L.divIcon({
     className: "peer-label",
@@ -188,7 +188,6 @@ function updatePeer(data) {
 
   const parts = [data.rsn];
   if (data.world) parts.push(`World ${data.world}`);
-  if (data.activity) parts.push(data.activity);
   peer.marker.setTooltipContent(parts.join(" · "));
 
   updateSocialPanel();
@@ -344,8 +343,7 @@ function renderClanTab(contentEl, countEl) {
 function renderMember(data, isOffline = false) {
   const color = isOffline ? "#555" : getPeerColor(data.rsn);
   const world = data.world ? `W${data.world}` : "";
-  const activity = escHtml(data.activity || "");
-  const info = [world, activity].filter(Boolean).join(" · ");
+  const info = world;
   const hasPos = data.x && data.y && !isOffline;
   const offlineClass = isOffline ? " offline" : "";
   const safeRsn = escHtml(data.rsn);
