@@ -95,16 +95,7 @@ function createSilentTile(src, done, fallbackSrc) {
   return tile;
 }
 
-// Wiki tiles (base — ocean/background coverage for areas our cache doesn't have)
-const wikiLayer = L.tileLayer("", {
-  minZoom: -3, maxZoom: 5, maxNativeZoom: 3, tileSize: 256,
-});
-wikiLayer.getTileUrl = function (coords) {
-  return `https://maps.runescape.wiki/osrs/tiles/0_2019-10-31_1/${coords.z}/0_${coords.x}_${-(coords.y + 1)}.png`;
-};
-wikiLayer.addTo(map);
-
-// Local tiles (generated from OSRS game cache — our own data, all planes)
+// Local tiles (generated from OSRS game cache)
 const localTileLayer = L.tileLayer("", {
   minZoom: -3, maxZoom: 5, maxNativeZoom: 2, tileSize: 256,
 });
@@ -112,8 +103,7 @@ localTileLayer.getTileUrl = function (coords) {
   return `tiles/2/${currentPlane}_${coords.x}_${-(coords.y + 1)}.png`;
 };
 localTileLayer.createTile = function (coords, done) {
-  const wikiUrl = `https://maps.runescape.wiki/osrs/tiles/0_2019-10-31_1/${coords.z}/0_${coords.x}_${-(coords.y + 1)}.png`;
-  return createSilentTile(this.getTileUrl(coords), done, currentPlane === 0 ? wikiUrl : null);
+  return createSilentTile(this.getTileUrl(coords), done);
 };
 localTileLayer.addTo(map);
 
@@ -121,13 +111,6 @@ localTileLayer.addTo(map);
 function switchPlane(newPlane) {
   if (newPlane === currentPlane) return;
   currentPlane = newPlane;
-  // Show/hide wiki base depending on plane (wiki only has plane 0)
-  if (newPlane === 0) {
-    if (!map.hasLayer(wikiLayer)) wikiLayer.addTo(map);
-  } else {
-    if (map.hasLayer(wikiLayer)) map.removeLayer(wikiLayer);
-  }
-  // Reload local tiles with new plane
   localTileLayer.redraw();
 }
 
@@ -628,12 +611,9 @@ initPathDrawing(map, gameToLatLng);
 
 // ── Minimap ─────────────────────────────────────────────
 
-// Custom tile layer: local cache tiles first, wiki fallback for ocean/gaps
 const minimapTiles = L.tileLayer("", { minZoom: -3, maxZoom: 5, maxNativeZoom: 2, tileSize: 256 });
 minimapTiles.createTile = function (coords, done) {
-  const localUrl = `tiles/2/0_${coords.x}_${-(coords.y + 1)}.png`;
-  const wikiUrl = `https://maps.runescape.wiki/osrs/tiles/0_2019-10-31_1/${coords.z}/0_${coords.x}_${-(coords.y + 1)}.png`;
-  return createSilentTile(localUrl, done, wikiUrl);
+  return createSilentTile(`tiles/2/0_${coords.x}_${-(coords.y + 1)}.png`, done);
 };
 const minimap = new L.Control.MiniMap(minimapTiles, {
   position: "bottomleft",
