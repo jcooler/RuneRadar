@@ -54,15 +54,24 @@ const VIA_ICONS = {
   fc: "https://oldschool.runescape.wiki/images/Chat-channel.png",
 };
 
-function makePeerLabel(rsn, world, via) {
-  const worldTag = world ? ` W${world}` : "";
+// World number → flag emoji (OSRS world regions)
+function getWorldFlag(world) {
+  if (!world) return "";
+  // US worlds: 301-399 (most), UK: 401-499, German: 501-524, Australian: 525-535
+  if (world >= 400 && world < 500) return "🇬🇧";
+  if (world >= 500 && world < 525) return "🇩🇪";
+  if (world >= 525 && world < 536) return "🇦🇺";
+  return "🇺🇸";
+}
+
+function makePeerLabel(rsn, via) {
   const viaType = (via && via.length > 0) ? via[0] : null;
   const viaIcon = viaType && VIA_ICONS[viaType]
     ? `<img src="${VIA_ICONS[viaType]}" style="height:24px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;" />`
     : "";
   return L.divIcon({
     className: "peer-label",
-    html: `<span>${viaIcon}${escHtml(rsn)}${worldTag}</span>`,
+    html: `<span>${viaIcon}${escHtml(rsn)}</span>`,
     iconSize: [200, 22],
     iconAnchor: [100, 30],
   });
@@ -171,7 +180,7 @@ function updatePeer(data) {
     marker.bindTooltip("", { direction: "top", offset: [0, -10] });
 
     const label = L.marker(latlng, {
-      icon: makePeerLabel(data.rsn, data.world, data.via),
+      icon: makePeerLabel(data.rsn, data.via),
       interactive: false, zIndexOffset: 499,
     }).addTo(peerLayer);
 
@@ -181,13 +190,15 @@ function updatePeer(data) {
     peer.marker.setLatLng(latlng);
     peer.marker.setIcon(makePeerIcon(color));
     peer.label.setLatLng(latlng);
-    peer.label.setIcon(makePeerLabel(data.rsn, data.world, data.via));
+    peer.label.setIcon(makePeerLabel(data.rsn, data.via));
     peer.lastUpdate = now;
     peer.data = data;
   }
 
+  const flag = getWorldFlag(data.world);
   const parts = [data.rsn];
-  if (data.world) parts.push(`World ${data.world}`);
+  if (data.world) parts.push(`${flag} World ${data.world}`);
+  if (data.activity) parts.push(data.activity);
   peer.marker.setTooltipContent(parts.join(" · "));
 
   updateSocialPanel();
@@ -342,7 +353,8 @@ function renderClanTab(contentEl, countEl) {
 
 function renderMember(data, isOffline = false) {
   const color = isOffline ? "#555" : getPeerColor(data.rsn);
-  const world = data.world ? `W${data.world}` : "";
+  const flag = getWorldFlag(data.world);
+  const world = data.world ? `${flag} W${data.world}` : "";
   const activity = escHtml(data.activity || "");
   const info = [world, activity].filter(Boolean).join(" · ");
   const hasPos = data.x && data.y && !isOffline;

@@ -247,16 +247,17 @@ public class RuneRadarPlugin extends Plugin
         if (instanced) return "In an instance";
         try
         {
-            // Use the widget that shows the location name in the top-left of the game
-            net.runelite.api.widgets.Widget locationWidget = client.getWidget(net.runelite.api.widgets.WidgetInfo.MINIMAP_WORLDMAP_ORB.getGroupId(), 0);
-            // Fallback: use the chunk location name from client
-            String location = client.getLocalPlayer() != null ? "" : "";
-
-            // Try getting the location text from the minimap area text widget
-            net.runelite.api.widgets.Widget areaWidget = client.getWidget(90, 39);
-            if (areaWidget != null && areaWidget.getText() != null && !areaWidget.getText().isEmpty())
+            // Try multiple widget IDs for the area/location name
+            // Widget 90.39 = area text, 10551322 = minimap location text
+            int[][] widgetIds = {{90, 39}, {90, 38}, {90, 36}, {160, 22}, {161, 22}};
+            for (int[] wid : widgetIds)
             {
-                return areaWidget.getText();
+                net.runelite.api.widgets.Widget w = client.getWidget(wid[0], wid[1]);
+                if (w != null && w.getText() != null && !w.getText().isEmpty()
+                    && !w.getText().equals("null"))
+                {
+                    return w.getText();
+                }
             }
         }
         catch (Exception e)
