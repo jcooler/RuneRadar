@@ -331,8 +331,8 @@
     }
     .social-group-label:first-child { border-top: none; }
     .social-member {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 8px 14px 8px 20px; font-size: 12px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px 6px 20px; font-size: 12px;
     }
     .social-member.clickable { cursor: pointer; }
     .social-member.clickable:hover { background: var(--bg-surface); }
@@ -341,8 +341,8 @@
     }
     .social-member-name { color: var(--text); font-weight: 600; }
     .social-member-info {
-      color: var(--text-muted); font-size: 11px; width: 100%;
-      padding-left: 16px;
+      color: var(--text-muted); font-size: 11px; margin-left: auto;
+      white-space: nowrap;
     }
     .social-member.offline { opacity: 0.5; }
     .social-member.offline .social-member-name { color: var(--text-muted); }

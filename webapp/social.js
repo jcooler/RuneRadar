@@ -367,18 +367,25 @@ function renderClanTab(contentEl, countEl) {
 function renderMember(data, isOffline = false) {
   const color = isOffline ? "#555" : getPeerColor(data.rsn);
   const flagHtml = data.world ? getWorldFlagHtml(data.world) : "";
-  const world = data.world ? `${flagHtml}W${data.world}` : "";
-  const activity = escHtml(data.activity || "");
-  const info = [world, activity].filter(Boolean).join(" · ");
+  const worldTag = data.world ? `${flagHtml}W${data.world}` : "";
   const hasPos = data.x && data.y && !isOffline;
   const offlineClass = isOffline ? " offline" : "";
   const safeRsn = escHtml(data.rsn);
-  // Use data attribute + delegated handler instead of inline onclick to avoid JS injection
+  const activity = escHtml(data.activity || "");
+  const via = (data.via || []).map(v => v === "friends" ? "Friend" : v === "clan" ? "Clan" : "FC").join(", ");
+
+  // Hover tooltip data
+  const tooltipParts = [];
+  if (activity) tooltipParts.push(activity);
+  if (via) tooltipParts.push(via);
+  const tooltip = tooltipParts.length > 0 ? escHtml(tooltipParts.join(" · ")) : "";
+
   return `<div class="social-member${hasPos ? " clickable" : ""}${offlineClass}"
-    ${hasPos ? `data-peer-rsn="${safeRsn}"` : ""}>
+    ${hasPos ? `data-peer-rsn="${safeRsn}"` : ""}
+    ${tooltip ? `title="${tooltip}"` : ""}>
     <span class="social-member-dot" style="background:${color}"></span>
     <span class="social-member-name">${safeRsn}</span>
-    <span class="social-member-info">${isOffline ? "Offline" : info}</span>
+    <span class="social-member-info">${isOffline ? "Offline" : worldTag}</span>
   </div>`;
 }
 
