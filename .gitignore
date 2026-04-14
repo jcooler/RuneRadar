@@ -24,8 +24,6 @@ webapp/*.jpg
 # Build artifacts
 out/
 
-# Map tiles (37MB — regenerate from game cache)
-webapp/tiles/
 
 # Node
 relay-server/node_modules/
