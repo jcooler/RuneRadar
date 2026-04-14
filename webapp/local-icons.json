@@ -1,0 +1,831 @@
+{
+  "folder": "icons/",
+  "icons": {
+    "general_store": {
+      "filename": "1448.png",
+      "name": "General Store",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1448
+    },
+    "sword_shop": {
+      "filename": "1449.png",
+      "name": "Sword Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1449
+    },
+    "magic_shop": {
+      "filename": "1450.png",
+      "name": "Magic Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1450
+    },
+    "axe_shop": {
+      "filename": "1451.png",
+      "name": "Axe Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1451
+    },
+    "helmet_shop": {
+      "filename": "1452.png",
+      "name": "Helmet Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1452
+    },
+    "bank": {
+      "filename": "1453.png",
+      "name": "Bank",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1453
+    },
+    "quest_start": {
+      "filename": "1454.png",
+      "name": "Quest Start",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1454
+    },
+    "amulet_shop": {
+      "filename": "1455.png",
+      "name": "Amulet Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1455
+    },
+    "mining_site": {
+      "filename": "1456.png",
+      "name": "Mining Site",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1456
+    },
+    "furnace": {
+      "filename": "1457.png",
+      "name": "Furnace",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1457
+    },
+    "anvil": {
+      "filename": "1458.png",
+      "name": "Anvil",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1458
+    },
+    "dummy": {
+      "filename": "1459.png",
+      "name": "Dummy",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1459
+    },
+    "dungeon": {
+      "filename": "1460.png",
+      "name": "Dungeon",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1460
+    },
+    "staff_shop": {
+      "filename": "1461.png",
+      "name": "Staff Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1461
+    },
+    "platebody_shop": {
+      "filename": "1462.png",
+      "name": "Platebody Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1462
+    },
+    "platelegs_shop": {
+      "filename": "1463.png",
+      "name": "Platelegs Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1463
+    },
+    "scimitar_shop": {
+      "filename": "1464.png",
+      "name": "Scimitar Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1464
+    },
+    "archery_shop": {
+      "filename": "1465.png",
+      "name": "Archery Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1465
+    },
+    "shield_shop": {
+      "filename": "1466.png",
+      "name": "Shield Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1466
+    },
+    "altar": {
+      "filename": "1467.png",
+      "name": "Altar",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1467
+    },
+    "herbalist": {
+      "filename": "1468.png",
+      "name": "Herbalist",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1468
+    },
+    "jewellery": {
+      "filename": "1469.png",
+      "name": "Jewellery",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1469
+    },
+    "gem_shop": {
+      "filename": "1470.png",
+      "name": "Gem Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1470
+    },
+    "crafting_shop": {
+      "filename": "1471.png",
+      "name": "Crafting Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1471
+    },
+    "candle_shop": {
+      "filename": "1472.png",
+      "name": "Candle Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1472
+    },
+    "fishing_shop": {
+      "filename": "1473.png",
+      "name": "Fishing Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1473
+    },
+    "fishing_spot": {
+      "filename": "1474.png",
+      "name": "Fishing Spot",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1474
+    },
+    "clothes_shop": {
+      "filename": "1475.png",
+      "name": "Clothes Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1475
+    },
+    "apothecary": {
+      "filename": "1476.png",
+      "name": "Apothecary",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1476
+    },
+    "silk_trader": {
+      "filename": "1477.png",
+      "name": "Silk Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1477
+    },
+    "kebab_seller": {
+      "filename": "1478.png",
+      "name": "Kebab Seller",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1478
+    },
+    "bar": {
+      "filename": "1479.png",
+      "name": "Bar",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1479
+    },
+    "mace_shop": {
+      "filename": "1480.png",
+      "name": "Mace Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1480
+    },
+    "tannery": {
+      "filename": "1481.png",
+      "name": "Tannery",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1481
+    },
+    "rare_trees": {
+      "filename": "1482.png",
+      "name": "Rare Trees",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1482
+    },
+    "spinning_wheel": {
+      "filename": "1483.png",
+      "name": "Spinning Wheel",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1483
+    },
+    "food_shop": {
+      "filename": "1484.png",
+      "name": "Food Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1484
+    },
+    "cookery_shop": {
+      "filename": "1485.png",
+      "name": "Cookery Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1485
+    },
+    "minigame": {
+      "filename": "1486.png",
+      "name": "Minigame",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1486
+    },
+    "water_source": {
+      "filename": "1487.png",
+      "name": "Water Source",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1487
+    },
+    "cooking_range": {
+      "filename": "1488.png",
+      "name": "Cooking Range",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1488
+    },
+    "plateskirt_shop": {
+      "filename": "1489.png",
+      "name": "Plateskirt Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1489
+    },
+    "potters_wheel": {
+      "filename": "1490.png",
+      "name": "Potters Wheel",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1490
+    },
+    "windmill": {
+      "filename": "1491.png",
+      "name": "Windmill",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1491
+    },
+    "mining_shop": {
+      "filename": "1492.png",
+      "name": "Mining Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1492
+    },
+    "chainmail_shop": {
+      "filename": "1493.png",
+      "name": "Chainmail Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1493
+    },
+    "silver_shop": {
+      "filename": "1494.png",
+      "name": "Silver Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1494
+    },
+    "fur_trader": {
+      "filename": "1495.png",
+      "name": "Fur Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1495
+    },
+    "spice_shop": {
+      "filename": "1496.png",
+      "name": "Spice Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1496
+    },
+    "agility_training": {
+      "filename": "1497.png",
+      "name": "Agility Training",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1497
+    },
+    "vegetable_store": {
+      "filename": "1498.png",
+      "name": "Vegetable Store",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1498
+    },
+    "slayer_master": {
+      "filename": "1499.png",
+      "name": "Slayer Master",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1499
+    },
+    "hairdresser": {
+      "filename": "1500.png",
+      "name": "Hairdresser",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1500
+    },
+    "farming_patch": {
+      "filename": "1501.png",
+      "name": "Farming Patch",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1501
+    },
+    "makeover_mage": {
+      "filename": "1502.png",
+      "name": "Makeover Mage",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1502
+    },
+    "transportation": {
+      "filename": "1504.png",
+      "name": "Transportation",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1504
+    },
+    "house_portal": {
+      "filename": "1505.png",
+      "name": "House Portal",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1505
+    },
+    "farming_shop": {
+      "filename": "1506.png",
+      "name": "Farming Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1506
+    },
+    "loom": {
+      "filename": "1507.png",
+      "name": "Loom",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1507
+    },
+    "brewery": {
+      "filename": "1508.png",
+      "name": "Brewery",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1508
+    },
+    "dairy_churn": {
+      "filename": "1509.png",
+      "name": "Dairy Churn",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1509
+    },
+    "stagnant_water_source": {
+      "filename": "1510.png",
+      "name": "Stagnant Water Source",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1510
+    },
+    "hunter_training": {
+      "filename": "1511.png",
+      "name": "Hunter Training",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1511
+    },
+    "poll_booth": {
+      "filename": "1512.png",
+      "name": "Poll Booth",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1512
+    },
+    "hunter_shop": {
+      "filename": "1513.png",
+      "name": "Hunter Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1513
+    },
+    "estate_agent": {
+      "filename": "1515.png",
+      "name": "Estate Agent",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1515
+    },
+    "sawmill": {
+      "filename": "1516.png",
+      "name": "Sawmill",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1516
+    },
+    "stonemason": {
+      "filename": "1517.png",
+      "name": "Stonemason",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1517
+    },
+    "agility_short-cut": {
+      "filename": "1518.png",
+      "name": "Agility Short Cut",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1518
+    },
+    "woodcutting_stump": {
+      "filename": "1519.png",
+      "name": "Woodcutting Stump",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1519
+    },
+    "holiday_event": {
+      "filename": "1520.png",
+      "name": "Holiday Event",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1520
+    },
+    "sandpit": {
+      "filename": "1521.png",
+      "name": "Sandpit",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1521
+    },
+    "task_master": {
+      "filename": "1522.png",
+      "name": "Task Master",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1522
+    },
+    "pet_insurance_shop": {
+      "filename": "1523.png",
+      "name": "Pet Insurance Shop",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1523
+    },
+    "bounty_hunter_store": {
+      "filename": "1524.png",
+      "name": "Bounty Hunter Store",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1524
+    },
+    "pricing_expert_weapons_and_armours": {
+      "filename": "1526.png",
+      "name": "Pricing Expert Weapons And Armours",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1526
+    },
+    "pricing_expert_logs": {
+      "filename": "1527.png",
+      "name": "Pricing Expert Logs",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1527
+    },
+    "pricing_expert_herbs": {
+      "filename": "1528.png",
+      "name": "Pricing Expert Herbs",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1528
+    },
+    "pricing_expert_runes": {
+      "filename": "1529.png",
+      "name": "Pricing Expert Runes",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1529
+    },
+    "pricing_expert_ores": {
+      "filename": "1530.png",
+      "name": "Pricing Expert Ores",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1530
+    },
+    "grand_exchange": {
+      "filename": "1531.png",
+      "name": "Grand Exchange",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1531
+    },
+    "raids_lobby": {
+      "filename": "1533.png",
+      "name": "Raids Lobby",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1533
+    },
+    "dungeon_link": {
+      "filename": "1534.png",
+      "name": "Dungeon Link",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1534
+    },
+    "map_link": {
+      "filename": "1535.png",
+      "name": "Map Link",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1535
+    },
+    "lumbridge_guide": {
+      "filename": "1536.png",
+      "name": "Lumbridge Guide",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1536
+    },
+    "bank_tutor": {
+      "filename": "1537.png",
+      "name": "Bank Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1537
+    },
+    "security_tutor": {
+      "filename": "1538.png",
+      "name": "Security Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1538
+    },
+    "woodcutting_tutor": {
+      "filename": "1669.png",
+      "name": "Woodcutting Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1669
+    },
+    "mining_tutor": {
+      "filename": "1670.png",
+      "name": "Mining Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1670
+    },
+    "fishing_tutor": {
+      "filename": "1671.png",
+      "name": "Fishing Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1671
+    },
+    "hunting_tutor": {
+      "filename": "1672.png",
+      "name": "Hunting Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1672
+    },
+    "smithing_tutor": {
+      "filename": "1673.png",
+      "name": "Smithing Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1673
+    },
+    "crafting_tutor": {
+      "filename": "1674.png",
+      "name": "Crafting Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1674
+    },
+    "cooking_tutor": {
+      "filename": "1675.png",
+      "name": "Cooking Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1675
+    },
+    "combat_tutor": {
+      "filename": "1676.png",
+      "name": "Combat Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1676
+    },
+    "prayer_tutor": {
+      "filename": "1677.png",
+      "name": "Prayer Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1677
+    },
+    "danger_tutor": {
+      "filename": "1678.png",
+      "name": "Danger Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1678
+    },
+    "ironman_tutor": {
+      "filename": "1679.png",
+      "name": "Ironman Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1679
+    },
+    "deadman_tutor": {
+      "filename": "1681.png",
+      "name": "Deadman Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1681
+    },
+    "holiday_item_trader": {
+      "filename": "1684.png",
+      "name": "Holiday Item Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1684
+    },
+    "wine_trader": {
+      "filename": "1685.png",
+      "name": "Wine Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1685
+    },
+    "junk_checker": {
+      "filename": "1686.png",
+      "name": "Junk Checker",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1686
+    },
+    "stone_gate": {
+      "filename": "1687.png",
+      "name": "Stone Gate",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1687
+    },
+    "newspaper_trader": {
+      "filename": "1688.png",
+      "name": "Newspaper Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1688
+    },
+    "tea_trader": {
+      "filename": "1689.png",
+      "name": "Tea Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1689
+    },
+    "dairy_cow": {
+      "filename": "1690.png",
+      "name": "Dairy Cow",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1690
+    },
+    "dye_trader": {
+      "filename": "1691.png",
+      "name": "Dye Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1691
+    },
+    "garden_supplier": {
+      "filename": "1692.png",
+      "name": "Garden Supplier",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1692
+    },
+    "bond_tutor": {
+      "filename": "1693.png",
+      "name": "Bond Tutor",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1693
+    },
+    "rope_trader": {
+      "filename": "1694.png",
+      "name": "Rope Trader",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1694
+    },
+    "taxidermist": {
+      "filename": "1695.png",
+      "name": "Taxidermist",
+      "width": 15,
+      "height": 15,
+      "spriteId": 1695
+    },
+    "kourend_task": {
+      "filename": "2216.png",
+      "name": "Kourend Task",
+      "width": 15,
+      "height": 15,
+      "spriteId": 2216
+    },
+    "sailing_hub": {
+      "filename": "4941.png",
+      "name": "Sailing Hub",
+      "width": 15,
+      "height": 15,
+      "spriteId": 4941
+    },
+    "sailing_station": {
+      "filename": "4942.png",
+      "name": "Sailing Station",
+      "width": 15,
+      "height": 15,
+      "spriteId": 4942
+    },
+    "quetzal_transport": {
+      "filename": "4944.png",
+      "name": "Quetzal Transport",
+      "width": 15,
+      "height": 15,
+      "spriteId": 4944
+    },
+    "docking_point": {
+      "filename": "4945.png",
+      "name": "Docking Point",
+      "width": 15,
+      "height": 15,
+      "spriteId": 4945
+    },
+    "salvaging_station": {
+      "filename": "4946.png",
+      "name": "Salvaging Station",
+      "width": 15,
+      "height": 15,
+      "spriteId": 4946
+    },
+    "sailing_destination": {
+      "filename": "4947.png",
+      "name": "Sailing Destination",
+      "width": 15,
+      "height": 15,
+      "spriteId": 4947
+    }
+  }
+}

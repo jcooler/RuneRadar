@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64">
+  <!-- Dark background circle -->
+  <circle cx="32" cy="32" r="30" fill="#0d1117"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#3eff3e" stroke-width="2" opacity="0.5"/>
+
+  <!-- Radar rings -->
+  <circle cx="32" cy="32" r="22" fill="none" stroke="#3eff3e" stroke-width="0.8" opacity="0.25"/>
+  <circle cx="32" cy="32" r="14" fill="none" stroke="#3eff3e" stroke-width="0.8" opacity="0.2"/>
+
+  <!-- Radar crosshairs -->
+  <line x1="32" y1="2" x2="32" y2="62" stroke="#3eff3e" stroke-width="0.6" opacity="0.2"/>
+  <line x1="2" y1="32" x2="62" y2="32" stroke="#3eff3e" stroke-width="0.6" opacity="0.2"/>
+
+  <!-- Radar blips -->
+  <circle cx="14" cy="18" r="2" fill="#3eff3e" opacity="0.5"/>
+  <circle cx="50" cy="44" r="1.5" fill="#3eff3e" opacity="0.35"/>
+  <circle cx="22" cy="48" r="1.5" fill="#3eff3e" opacity="0.4"/>
+
+  <!-- Rune med helm (actual OSRS sprite, centered) -->
+  <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAbCAMAAAC+/9RaAAAAsVBMVEUAAAAAAAEVGh0YICQaJiogKi4iLjQmMjkoNTwqOkAuPUMwQEgyQ0w3SlI8UFg9UlxAVl5CWGI6TVY1SE4NFRgdAAAmAAA1CQBCDQBMDQlREQlWEQlgEQlbEQlkFQlpFQl0GA1wGA18Gg2AGg2EGg2HGg2RHRGbIBGYIBGVIBFdfIlbeodaeIVYdYNWc4BVcX1Sb3tRbXhQanVNZ3NMZXBIYGtGXWdDW2VKY24VERGOHRH3fCXlAAAAAXRSTlMAQObYZgAAAURJREFUeNoFwclqVFEABcA6910jxkwmgt8QcUIz0P+/iS7EdbZutcGIaOjhWBWAABQAkKvrm9uz0/PjiwAWIB9hbd/tk23AAvIBc3/xs3QuO5iQ921sRtC2TzZ0IG/bVjAPaLuMl5nkTRtwX2jb8xryum3b/QweW+15Gbnsvm3bDd2A1tpU7YL9fhTO2hbJ65z8AN1111273p9Z6zDGn8O2bdM0D7/S9VoMY3x/9vLw6OTixcWrh4eHBAIZq9VqtTpdra5vbs9Ojg8PlmVZlgyO4W+ZS5ODNojJ5dePTO7gBAIDTzHdtT7c9LEJGLj8Rn5X3s/72ZJk1wGHX9xV3s1AwrYmbHtXebvMfbdNBQYAI9KDSmzKACB29yQEJgBJ9JE8KoZ+Bpg6m/xrAZIgn65vT8+PngcAQK6uX5weHwUgAAQU4D9BvaMkWTe/MAAAAABJRU5ErkJggg==" x="10" y="8" width="44" height="48" image-rendering="pixelated"/>
+</svg>

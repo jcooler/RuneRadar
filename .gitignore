@@ -1,0 +1,31 @@
+# Gradle
+runelite-plugin/.gradle/
+runelite-plugin/build/
+runelite-plugin/out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# osrs-wiki-maps tool (cloned separately)
+osrs-wiki-maps/
+
+# Compiled classes
+runelite-plugin/bin/
+
+# Downloaded maps
+webapp/*.jpg
+
+# Build artifacts
+out/
+
+# Map tiles (37MB — regenerate from game cache)
+webapp/tiles/
+
+# Node
+relay-server/node_modules/

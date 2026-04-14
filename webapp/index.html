@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RuneRadar</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css" />
+  <style>
+    /* ── Theme Variables ─────────────────────────────────── */
+    :root, body.theme-dark {
+      --bg: #0d1117;
+      --bg-panel: rgba(13,17,23,0.9);
+      --bg-panel-solid: #0d1117;
+      --bg-surface: #161b22;
+      --bg-hover: #21262d;
+      --border: #30363d;
+      --border-separator: #21262d;
+      --text: #c9d1d9;
+      --text-secondary: #8b949e;
+      --text-muted: #484f58;
+      --accent: #58a6ff;
+      --accent-bg: #1f6feb;
+      --accent-hover: #388bfd;
+      --overlay: rgba(0,0,0,0.4);
+      --shadow: rgba(0,0,0,0.5);
+      --town-label: #fff;
+      --kingdom-label: #d4a017;
+      --measure-color: #58a6ff;
+      --font: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body.theme-light {
+      --bg: #f0f2f5;
+      --bg-panel: rgba(255,255,255,0.92);
+      --bg-panel-solid: #ffffff;
+      --bg-surface: #f6f8fa;
+      --bg-hover: #e8eaed;
+      --border: #d0d7de;
+      --border-separator: #e0e3e6;
+      --text: #1f2328;
+      --text-secondary: #59636e;
+      --text-muted: #8b949e;
+      --accent: #0969da;
+      --accent-bg: #0969da;
+      --accent-hover: #0550ae;
+      --overlay: rgba(0,0,0,0.25);
+      --shadow: rgba(0,0,0,0.12);
+      --town-label: #fff;
+      --kingdom-label: #b8860b;
+      --measure-color: #0969da;
+      --font: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body.theme-game {
+      --bg: #1b1509;
+      --bg-panel: rgba(43,33,14,0.94);
+      --bg-panel-solid: #2b210e;
+      --bg-surface: #3a2e18;
+      --bg-hover: #4a3c22;
+      --border: #5c4b32;
+      --border-separator: #4a3c22;
+      --text: #f5deb3;
+      --text-secondary: #c9a96e;
+      --text-muted: #8c7a56;
+      --accent: #ff981f;
+      --accent-bg: #b36d0e;
+      --accent-hover: #e88a15;
+      --overlay: rgba(0,0,0,0.5);
+      --shadow: rgba(0,0,0,0.6);
+      --town-label: #ff981f;
+      --kingdom-label: #ffd700;
+      --measure-color: #ff981f;
+      --font: 'Segoe UI', Arial, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); font-family: var(--font); overflow: hidden; transition: background 0.3s; }
+    #map { width: 100vw; height: 100vh; background: var(--bg); }
+
+    /* Status bar */
+    #status {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; padding: 6px 16px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.3s ease;
+      display: flex; align-items: center;
+    }
+    #status.connected { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
+    #status.connected::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-right: 8px; box-shadow: 0 0 6px #4CAF50; animation: dot-pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
+    #status.disconnected { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
+    #status.disconnected::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #EF5350; margin-right: 8px; box-shadow: 0 0 6px #EF5350; animation: dot-pulse-red 1.5s ease-in-out infinite; flex-shrink: 0; }
+    #status.connecting { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
+    #status.connecting::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FFA726; margin-right: 8px; box-shadow: 0 0 6px #FFA726; animation: dot-pulse-amber 1s ease-in-out infinite; flex-shrink: 0; }
+    @keyframes dot-pulse-green { 0%, 100% { box-shadow: 0 0 4px #4CAF50; } 50% { box-shadow: 0 0 12px #4CAF50, 0 0 4px #4CAF50; } }
+    @keyframes dot-pulse-red { 0%, 100% { box-shadow: 0 0 4px #EF5350; } 50% { box-shadow: 0 0 12px #EF5350, 0 0 4px #EF5350; } }
+    @keyframes dot-pulse-amber { 0%, 100% { box-shadow: 0 0 4px #FFA726; } 50% { box-shadow: 0 0 12px #FFA726, 0 0 4px #FFA726; } }
+
+    /* Search bar */
+    #search-container {
+      position: fixed; top: 12px; left: 60px; z-index: 1001; width: 320px;
+    }
+    #search-input {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-panel); color: var(--text); font-size: 14px;
+      backdrop-filter: blur(10px); outline: none;
+    }
+    #search-input:focus { border-color: var(--accent); }
+    #search-input:autofill, #search-input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 30px var(--bg-panel-solid) inset !important;
+      -webkit-text-fill-color: var(--text) !important;
+      caret-color: var(--text);
+    }
+    #search-input::placeholder { color: var(--text-muted); }
+    #search-results {
+      display: none; margin-top: 4px; background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 8px; overflow-y: auto; max-height: 400px; backdrop-filter: blur(10px);
+    }
+    .search-result {
+      padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    }
+    .search-result:hover, .search-result.active { background: var(--bg-hover); }
+    .sr-name { color: var(--text); font-size: 13px; }
+    .sr-type { color: var(--text-muted); font-size: 11px; }
+
+    /* Player info panel */
+    #player-info {
+      position: fixed; bottom: 244px; left: 12px; z-index: 1000;
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; backdrop-filter: blur(8px); min-width: 200px;
+    }
+    #player-info .name { color: var(--accent); font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    #player-info .coords { color: var(--text-secondary); font-size: 12px; font-family: monospace; }
+    #player-info .stats { display: flex; gap: 14px; margin-top: 6px; font-size: 12px; }
+    #player-info .stat { display: flex; align-items: center; gap: 3px; }
+    #player-info .stat img { width: 14px; height: 14px; image-rendering: pixelated; }
+    .stat-hp { color: #e74c3c; } .stat-pray { color: #3498db; } .stat-run { color: #f1c40f; }
+    #player-info.hidden { display: none; }
+
+    /* Hover coords */
+    #hover-coords {
+      position: fixed; bottom: 12px; left: 240px; z-index: 1000;
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 8px; color: var(--text-secondary); font-size: 11px; font-family: monospace;
+      backdrop-filter: blur(8px); min-width: 60px; text-align: center;
+    }
+    #hover-coords.hidden { display: none; }
+
+    /* Tool buttons */
+    .tool-btn {
+      position: fixed; z-index: 1000; width: 36px; height: 36px; border-radius: 8px;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      color: var(--text); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); transition: all 0.15s;
+    }
+    .tool-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+    .tool-btn.active { background: var(--accent-bg); border-color: var(--accent); color: white; }
+    .tool-btn.hidden { display: none; }
+
+    #fullscreen-btn { top: 12px; right: 56px; }
+    #locate-btn { top: 12px; right: 100px; }
+    #measure-btn { top: 12px; right: 144px; }
+    #pin-btn { top: 12px; right: 188px; }
+    #path-btn { top: 12px; right: 232px; }
+    #export-btn { top: 12px; right: 276px; }
+    #import-btn { top: 12px; right: 312px; }
+    #clear-drawings-btn { top: 12px; right: 348px; }
+
+    /* Pin modal */
+    #pin-modal {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      z-index: 2000; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px 20px; backdrop-filter: blur(10px); width: 280px;
+    }
+    #pin-modal h3 { color: var(--text); font-size: 14px; margin-bottom: 10px; font-weight: 600; }
+    #pin-modal input {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-surface); color: var(--text); font-size: 13px; outline: none; margin-bottom: 10px;
+    }
+    #pin-modal input:focus { border-color: var(--accent); }
+    #pin-modal .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    #pin-modal .modal-btns button {
+      padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid var(--border);
+    }
+    #pin-modal .btn-save { background: var(--accent-bg); color: #fff; border-color: var(--accent); }
+    #pin-modal .btn-save:hover { background: var(--accent-hover); }
+    #pin-modal .btn-cancel { background: var(--bg-hover); color: var(--text); }
+    #pin-modal .btn-cancel:hover { background: var(--border); }
+    #pin-overlay { display: none; position: fixed; inset: 0; z-index: 1999; background: var(--overlay); }
+
+    /* Pin list panel */
+    #pin-list {
+      display: none; position: fixed; top: 56px; right: 188px; z-index: 1001;
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px; backdrop-filter: blur(10px); max-height: 300px; overflow-y: auto; width: 220px;
+    }
+    #pin-list .pin-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 8px; cursor: pointer; border-radius: 4px; font-size: 12px; color: var(--text);
+    }
+    #pin-list .pin-item:hover { background: var(--bg-hover); }
+    #pin-list .pin-item .pin-coords { color: var(--text-muted); font-size: 10px; font-family: monospace; }
+    #pin-list .empty-msg { color: var(--text-muted); font-size: 12px; text-align: center; padding: 8px; }
+
+    /* Toast notification */
+    #toast {
+      display: none; position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 2000; background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 16px; color: var(--text); font-size: 13px;
+      backdrop-filter: blur(8px); transition: opacity 0.3s;
+    }
+
+    /* Leaflet overrides */
+    .leaflet-control-zoom a { background: var(--bg-surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
+    .leaflet-control-zoom a:hover { background: var(--bg-hover) !important; }
+    .leaflet-control-attribution { background: var(--bg-panel) !important; color: var(--text-muted) !important; }
+    .leaflet-control-attribution a { color: var(--accent) !important; }
+
+    /* Town labels */
+    .town-label span {
+      color: var(--town-label); text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 0 3px #000;
+      font-family: var(--font); font-weight: 600; white-space: nowrap; pointer-events: none;
+    }
+    .kingdom-label span {
+      color: var(--kingdom-label); text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 0 4px #000;
+      font-family: var(--font); font-weight: 700; font-style: italic;
+      white-space: nowrap; pointer-events: none; letter-spacing: 2px;
+    }
+    .player-label {
+      color: #fff; font-size: 16px; font-family: var(--font); font-weight: 700;
+      text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; white-space: nowrap; text-align: center; pointer-events: none;
+    }
+
+    /* Transport icons */
+    .transport-icon { text-align: center; font-weight: 700; pointer-events: auto; }
+    .fairy-ring span {
+      background: rgba(34,139,34,0.9); color: #fff; font-size: 12px; padding: 2px 6px;
+      border-radius: 4px; border: 1px solid #2ecc40; white-space: nowrap;
+      font-family: monospace; letter-spacing: 1px;
+    }
+    .spirit-tree { font-size: 20px; }
+    .teleport-icon { display: flex; align-items: center; gap: 0; }
+    .teleport-icon img { width: 24px; height: 24px; image-rendering: pixelated; }
+
+    /* Measure label */
+    .measure-label {
+      color: var(--measure-color); font-size: 16px; font-weight: 700; text-align: center;
+      text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; white-space: nowrap; pointer-events: none;
+    }
+
+    /* Custom pins */
+    .custom-pin { position: relative; font-size: 24px; line-height: 1; }
+    .pin-label {
+      position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+      font-size: 13px; color: #fff; white-space: nowrap;
+      text-shadow: 0 0 3px #000, 0 0 3px #000, 1px 1px 2px #000; font-weight: 700;
+    }
+
+    /* Peer markers */
+    .peer-marker {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.8);
+    }
+    .peer-label span {
+      font-size: 11px; color: #ccc; white-space: nowrap;
+      text-shadow: 0 0 3px #000, 0 0 3px #000; font-weight: 600;
+      text-align: center; display: block;
+    }
+
+    /* Social panel */
+    .social-panel {
+      position: fixed; bottom: 12px; right: 12px; z-index: 1200;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 10px; backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px var(--shadow); font-family: var(--font);
+      width: 260px; overflow: hidden; transition: all 0.2s;
+    }
+    .social-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; cursor: pointer; user-select: none;
+      font-size: 14px; font-weight: 700; color: var(--text);
+    }
+    .social-header:hover { background: var(--bg-surface); }
+    .social-status {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #666; flex-shrink: 0;
+    }
+    .social-status.connected { background: #4CAF50; box-shadow: 0 0 6px #4CAF50; }
+    .social-status.disconnected { background: #666; }
+    .social-count {
+      margin-left: auto; background: var(--accent-bg); color: #fff;
+      font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 600;
+    }
+    .social-body {
+      max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+    }
+    .social-body.visible { max-height: 420px; overflow-y: auto; }
+    .social-tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+    }
+    .social-tab {
+      flex: 1; padding: 8px; font-size: 12px; font-weight: 600;
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-family: var(--font);
+      border-bottom: 2px solid transparent; transition: all 0.15s;
+    }
+    .social-tab:hover { color: var(--text); background: var(--bg-surface); }
+    .social-tab.active {
+      color: var(--accent); border-bottom-color: var(--accent);
+    }
+    .social-tab-content { padding: 0; }
+    .social-clan-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .social-clan-icon { font-size: 16px; }
+    .social-clan-name {
+      font-size: 13px; font-weight: 700; color: var(--accent);
+    }
+    .social-clan-count {
+      margin-left: auto; font-size: 11px; color: var(--text-muted);
+    }
+    .social-toggle-arrow {
+      font-size: 10px; color: var(--text-muted); margin-left: 4px;
+    }
+    .social-group-label {
+      padding: 6px 14px 2px; font-size: 10px; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+      border-top: 1px solid var(--border);
+    }
+    .social-group-label:first-child { border-top: none; }
+    .social-member {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 14px 5px 20px; font-size: 12px;
+    }
+    .social-member.clickable { cursor: pointer; }
+    .social-member.clickable:hover { background: var(--bg-surface); }
+    .social-member-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .social-member-name { color: var(--text); font-weight: 600; }
+    .social-member-info {
+      color: var(--text-muted); font-size: 11px; margin-left: auto;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+    }
+    .social-member.offline { opacity: 0.5; }
+    .social-member.offline .social-member-name { color: var(--text-muted); }
+    .social-empty {
+      padding: 8px 14px; font-size: 12px; color: var(--text-muted); font-style: italic;
+    }
+    /* Layer control */
+    .leaflet-control-layers { background: var(--bg-panel) !important; border: 1px solid var(--border) !important;
+      border-radius: 8px !important; backdrop-filter: blur(10px); box-shadow: 0 4px 16px var(--shadow) !important;
+      color: var(--text) !important; font-family: var(--font); padding: 0 !important; z-index: 1500 !important; }
+    .leaflet-control-layers-expanded { padding: 10px 14px !important; min-width: 210px; max-height: 80vh; overflow-y: auto; z-index: 1500 !important;
+      scrollbar-width: none; -ms-overflow-style: none; }
+    .leaflet-control-layers-expanded::-webkit-scrollbar { display: none; }
+    .leaflet-control-layers-toggle { background-color: var(--bg-panel) !important; border: 1px solid var(--border) !important;
+      border-radius: 8px !important; width: 36px !important; height: 36px !important; }
+    .leaflet-control-layers label { color: var(--text) !important; font-size: 13px !important; display: flex !important;
+      align-items: center !important; gap: 8px !important; padding: 4px 0 !important; cursor: pointer !important; transition: color 0.15s !important; }
+    .leaflet-control-layers label:hover { color: var(--accent) !important; }
+    .leaflet-control-layers-separator { border-top: 1px solid var(--border-separator) !important; margin: 6px 0 !important; }
+    .leaflet-control-layers input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+      border: 1.5px solid var(--text-muted); border-radius: 3px; background: var(--bg-surface); cursor: pointer; position: relative; flex-shrink: 0; transition: all 0.15s ease; }
+    .leaflet-control-layers input[type="checkbox"]:hover { border-color: var(--accent); }
+    .leaflet-control-layers input[type="checkbox"]:checked { background: var(--accent-bg); border-color: var(--accent); }
+    .leaflet-control-layers input[type="checkbox"]:checked::after { content: ''; position: absolute; left: 4px; top: 1px;
+      width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .leaflet-control-layers-overlays span { font-size: 13px; }
+    .leaflet-control-layers-overlays span img { vertical-align: middle; image-rendering: pixelated; }
+
+    /* Collapsible layer groups */
+    .layer-group-header {
+      display: flex; align-items: center; gap: 4px;
+      padding: 5px 0; cursor: pointer; -webkit-user-select: none; user-select: none;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-secondary); border-top: 1px solid var(--border-separator); margin-top: 4px; padding-top: 6px;
+    }
+    .layer-group-header:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+    .layer-group-header:hover { color: var(--text); }
+    .layer-group-header .arrow { font-size: 9px; transition: transform 0.2s; }
+    .layer-group-header.collapsed .arrow { transform: rotate(-90deg); }
+    .layer-group-toggle {
+      font-size: 11px; cursor: pointer; padding: 1px 4px; border-radius: 3px;
+      color: var(--text-muted); margin-left: auto; line-height: 1;
+    }
+    .layer-group-toggle:first-of-type { margin-left: auto; }
+    .layer-group-toggle:hover { background: var(--bg-hover); color: var(--accent); }
+    .layer-group-body { overflow: hidden; transition: max-height 0.25s ease; }
+    .layer-group-body.collapsed { max-height: 0 !important; }
+
+    /* Settings section */
+    .settings-section { border-top: 1px solid var(--border-separator); margin-top: 6px; padding-top: 6px; }
+    .settings-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 4px; }
+    .settings-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; color: var(--text); }
+    .settings-row label { color: var(--text-secondary); font-size: 11px; min-width: 50px; }
+    .settings-row input[type="color"] { width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 3px; background: none; cursor: pointer; padding: 1px; }
+
+    /* Theme selector */
+    .theme-select {
+      background: var(--bg-surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer; outline: none; flex: 1;
+    }
+    .theme-select:focus { border-color: var(--accent); }
+    .theme-select option { background: var(--bg-panel-solid); color: var(--text); }
+
+    /* Tooltip */
+    .leaflet-tooltip { background: var(--bg-panel) !important; border: 1px solid var(--border) !important;
+      color: var(--text) !important; border-radius: 4px !important; font-size: 12px !important; text-transform: capitalize; }
+    .leaflet-tooltip-top::before { border-top-color: var(--border) !important; }
+
+    /* Minimap */
+    .leaflet-control-minimap { border: 1px solid var(--border) !important; border-radius: 4px !important; background: var(--bg) !important; z-index: 500 !important; }
+    .leaflet-control-minimap-toggle-display { display: none !important; }
+
+    /* Player marker */
+    .player-marker { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.85; } }
+
+    /* Game theme — extra OSRS-style accents */
+    body.theme-game .fairy-ring span {
+      background: rgba(60,45,20,0.9); border-color: #8c7a56; color: #f5deb3;
+    }
+    body.theme-game .tool-btn.active { background: #b36d0e; }
+    body.theme-game .leaflet-control-layers label:hover { color: #ff981f !important; }
+
+    /* ── Mobile / Responsive ── */
+    @media (max-width: 768px) {
+      #search-container { width: 180px; }
+      #search-input { font-size: 13px; padding: 6px 10px; }
+      #player-info { font-size: 11px; padding: 6px 10px; max-width: 200px; }
+      #player-info .stats { gap: 8px; }
+      .tool-btn { width: 32px; height: 32px; font-size: 16px; }
+      #measure-btn { top: 8px; right: 180px; }
+      #pin-btn { top: 8px; right: 216px; }
+      #path-btn { top: 8px; right: 252px; }
+      #export-btn { top: 8px; right: 288px; }
+      #import-btn { top: 8px; right: 324px; }
+      #clear-drawings-btn { top: 8px; right: 360px; }
+      .social-panel { width: 220px; bottom: 8px; right: 8px; }
+      .social-body.visible { max-height: 300px; }
+      .leaflet-control-minimap { width: 140px !important; height: 140px !important; }
+      #locate-btn { width: 32px; height: 32px; font-size: 16px; }
+      #fullscreen-btn { width: 32px; height: 32px; font-size: 16px; }
+      .leaflet-control-layers-expanded { max-height: 60vh; min-width: 180px; }
+      #quest-info, #clue-info { max-width: 260px; font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+      #search-container { width: 140px; }
+      .tool-btn { width: 28px; height: 28px; font-size: 14px; }
+      #player-info { display: none; }
+      .social-panel { width: 180px; }
+      .leaflet-control-minimap { display: none !important; }
+      #quest-info, #clue-info { max-width: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="status" class="connecting">Connecting to RuneLite...</div>
+
+  <div id="search-container">
+    <div style="position:relative">
+      <input type="text" id="search-input" placeholder="Search locations..." />
+      <button id="search-clear" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);
+        background:none;border:none;color:#484f58;font-size:16px;cursor:pointer;display:none;padding:2px 4px;"
+        >&times;</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
+
+  <div id="player-info" class="hidden">
+    <div class="name" id="p-name">—</div>
+    <div class="coords" id="p-coords">—</div>
+    <div class="stats">
+      <span class="stat stat-hp"><img src="https://oldschool.runescape.wiki/images/Hitpoints_icon_%28detail%29.png" alt="HP"> <span id="p-hp">0</span></span>
+      <span class="stat stat-pray"><img src="https://oldschool.runescape.wiki/images/Prayer_icon_%28detail%29.png" alt="Prayer"> <span id="p-pray">0</span></span>
+      <span class="stat stat-run"><img src="https://oldschool.runescape.wiki/images/Agility_icon_%28detail%29.png" alt="Run"> <span id="p-run">0</span>%</span>
+    </div>
+  </div>
+
+  <div id="hover-coords"></div>
+
+  <button class="tool-btn" id="fullscreen-btn" title="Toggle fullscreen (F11)">⛶</button>
+  <button class="tool-btn" id="locate-btn" title="Go to player (Space)">⌖</button>
+  <button class="tool-btn" id="measure-btn" title="Measure distance">📏</button>
+  <button class="tool-btn" id="pin-btn" title="Drop a pin">📌</button>
+  <button class="tool-btn" id="path-btn" title="Draw path">✏️</button>
+  <button class="tool-btn" id="export-btn" title="Export pins &amp; paths" onclick="exportPinsAndPaths()">💾</button>
+  <button class="tool-btn" id="import-btn" title="Import pins &amp; paths" onclick="importPinsAndPaths()">📂</button>
+  <button class="tool-btn" id="clear-drawings-btn" title="Clear all pins &amp; paths">🗑️</button>
+
+  <div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:1999;background:rgba(0,0,0,0.4)"></div>
+
+  <div id="pin-modal" style="display:none">
+    <h3>📌 Drop Pin</h3>
+    <input type="text" id="pin-note-input" placeholder="Pin name (optional)" />
+    <div class="modal-btns">
+      <button class="btn-cancel" id="pin-cancel">Cancel</button>
+      <button class="btn-save" id="pin-save">Save</button>
+    </div>
+  </div>
+
+  <div id="confirm-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:2000;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;
+    padding:16px 20px;backdrop-filter:blur(10px);width:300px;">
+    <h3 style="color:var(--text);font-size:14px;margin-bottom:6px;font-weight:600" id="confirm-title">Are you sure?</h3>
+    <p style="color:var(--text-secondary);font-size:12px;margin-bottom:14px" id="confirm-msg">This action cannot be undone.</p>
+    <div class="modal-btns" style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-cancel" id="confirm-no" style="padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--bg-hover);color:var(--text)">Cancel</button>
+      <button id="confirm-yes" style="padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid #f85149;background:#da3633;color:#fff">Delete All</button>
+    </div>
+  </div>
+
+  <div id="pin-list"></div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+  <script src="transport-data.js"></script>
+  <script src="poi-names.js"></script>
+  <script src="new-area-pois.js"></script>
+  <script src="map-icons.js"></script>
+  <script src="tools.js"></script>
+  <script src="crypto.js"></script>
+  <script src="social.js"></script>
+  <script src="runeradar.js"></script>
+</body>
+</html>
