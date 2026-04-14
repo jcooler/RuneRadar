@@ -25,7 +25,12 @@ const MAX_ENCRYPTED_LEN = 1024;
 const MAX_CONNECTIONS_PER_IP = 5;
 const POSITION_THROTTLE_MS = 300;
 
-const RSN_REGEX = /^[a-zA-Z0-9 _-]{1,12}$/;
+const RSN_REGEX = /^[a-zA-Z0-9 \u00a0_-]{1,12}$/;
+
+// OSRS uses non-breaking spaces (\u00a0) in display names — normalize to regular spaces
+function normalizeRsn(rsn) {
+  return rsn.replace(/\u00a0/g, " ").trim();
+}
 
 // ── Per-IP tracking ──
 const connsByIp = new Map(); // ip → count
@@ -102,10 +107,13 @@ function getRecipients(player) {
 
   if (player.shareFriends) {
     const whoAddedMe = reverseFriends.get(player.rsnLower);
+    console.log(`[MATCH] ${player.rsn}: whoAddedMe=${whoAddedMe ? [...whoAddedMe].join(',') : 'null'}, myFriends=${player.friends.size}`);
     if (whoAddedMe) {
       for (const otherRsnLower of whoAddedMe) {
-        if (!player.friends.has(otherRsnLower)) continue;
+        const hasThem = player.friends.has(otherRsnLower);
         const other = playersByRsn.get(otherRsnLower);
+        console.log(`[MATCH]   checking ${otherRsnLower}: inMyFriends=${hasThem}, online=${!!other}, shareFriends=${other?.shareFriends}`);
+        if (!hasThem) continue;
         if (!other || other === player || !other.shareFriends) continue;
         recipients.add(other);
       }
@@ -138,7 +146,7 @@ function getVia(player, other) {
 // ── Message Handlers ──
 
 function handleIdentify(ws, data) {
-  const rsn = (data.rsn || "").trim();
+  const rsn = normalizeRsn((data.rsn || "").trim());
   if (!RSN_REGEX.test(rsn)) {
     return send(ws, { type: "error", message: "Invalid RSN format" });
   }
@@ -159,11 +167,13 @@ function handleIdentify(ws, data) {
 }
 
 function handleSocialUpdate(ws, player, data) {
+  console.log(`[SOCIAL] ${player.rsn}: ${(data.friends||[]).length} friends, clan=${data.clan}, shareFriends=${data.shareFriends}, shareClan=${data.shareClan}`);
+  if (data.friends && data.friends.length <= 10) console.log(`[SOCIAL] ${player.rsn} friends: ${JSON.stringify(data.friends)}`);
   if (Array.isArray(data.friends)) {
     const newFriends = new Set(
       data.friends.slice(0, MAX_FRIENDS)
         .filter(f => typeof f === "string")
-        .map(f => f.toLowerCase().trim())
+        .map(f => normalizeRsn(f).toLowerCase().trim())
         .filter(f => f.length > 0 && f.length <= MAX_RSN_LEN)
     );
     for (const oldFriend of player.friends) {
@@ -292,7 +302,7 @@ function disconnectPlayer(ws) {
 
 const wss = new WebSocketServer({
   port: PORT,
-  maxPayload: 4096,
+  maxPayload: 16384,
   perMessageDeflate: false,
   verifyClient: (info) => {
     const ip = info.req.socket.remoteAddress;
@@ -345,6 +355,14 @@ wss.on("connection", (ws, req) => {
       case "ping":
         if (player) handlePing(ws, player);
         else send(ws, { type: "pong" });
+        break;
+      case "debug":
+        // Temporary debug — dump all players and their friends
+        const dump = [];
+        for (const [rsn, p] of playersByRsn) {
+          dump.push({ rsn: p.rsn, friends: [...p.friends].slice(0, 10), friendCount: p.friends.size, clan: p.clan, shareFriends: p.shareFriends, shareClan: p.shareClan });
+        }
+        send(ws, { type: "debug", players: dump, reverseIndex: reverseFriends.size, groups: groupMembers.size });
         break;
       default:
         send(ws, { type: "error", message: "Unknown message type" });

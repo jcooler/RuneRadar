@@ -47,14 +47,24 @@ function makePeerIcon(color) {
   });
 }
 
-function makePeerLabel(rsn, activity, world) {
+// Via icons — use OSRS chat badge style icons
+const VIA_ICONS = {
+  friends: "https://oldschool.runescape.wiki/images/Friends_List.png",
+  clan: "https://oldschool.runescape.wiki/images/Grouping_icon.png",
+  fc: "https://oldschool.runescape.wiki/images/Chat-channel.png",
+};
+
+function makePeerLabel(rsn, world, via) {
   const worldTag = world ? ` W${world}` : "";
-  const actTag = activity ? ` · ${escHtml(activity)}` : "";
+  const viaType = (via && via.length > 0) ? via[0] : null;
+  const viaIcon = viaType && VIA_ICONS[viaType]
+    ? `<img src="${VIA_ICONS[viaType]}" style="height:12px;vertical-align:middle;image-rendering:pixelated;margin-right:3px;" />`
+    : "";
   return L.divIcon({
     className: "peer-label",
-    html: `<span>${escHtml(rsn)}${worldTag}${actTag}</span>`,
-    iconSize: [160, 20],
-    iconAnchor: [80, 28],
+    html: `<span>${viaIcon}${escHtml(rsn)}${worldTag}</span>`,
+    iconSize: [200, 22],
+    iconAnchor: [100, 30],
   });
 }
 
@@ -161,7 +171,7 @@ function updatePeer(data) {
     marker.bindTooltip("", { direction: "top", offset: [0, -10] });
 
     const label = L.marker(latlng, {
-      icon: makePeerLabel(data.rsn, data.activity, data.world),
+      icon: makePeerLabel(data.rsn, data.world, data.via),
       interactive: false, zIndexOffset: 499,
     }).addTo(peerLayer);
 
@@ -171,7 +181,7 @@ function updatePeer(data) {
     peer.marker.setLatLng(latlng);
     peer.marker.setIcon(makePeerIcon(color));
     peer.label.setLatLng(latlng);
-    peer.label.setIcon(makePeerLabel(data.rsn, data.activity, data.world));
+    peer.label.setIcon(makePeerLabel(data.rsn, data.world, data.via));
     peer.lastUpdate = now;
     peer.data = data;
   }
