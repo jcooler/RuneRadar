@@ -382,11 +382,12 @@
     .layer-group-header:hover { color: var(--text); }
     .layer-group-header .arrow { font-size: 9px; transition: transform 0.2s; }
     .layer-group-header.collapsed .arrow { transform: rotate(-90deg); }
+    .layer-group-name { flex: 1; }
+    .layer-group-controls { display: flex; align-items: center; gap: 2px; }
     .layer-group-toggle {
       font-size: 11px; cursor: pointer; padding: 1px 4px; border-radius: 3px;
-      color: var(--text-muted); margin-left: auto; line-height: 1;
+      color: var(--text-muted); line-height: 1;
     }
-    .layer-group-toggle:first-of-type { margin-left: auto; }
     .layer-group-toggle:hover { background: var(--bg-hover); color: var(--accent); }
     .layer-group-body { overflow: hidden; transition: max-height 0.25s ease; }
     .layer-group-body.collapsed { max-height: 0 !important; }

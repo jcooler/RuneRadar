@@ -722,10 +722,12 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
 
     const header = document.createElement("div");
     header.className = "layer-group-header" + (group.collapsed ? " collapsed" : "");
-    header.innerHTML = `<span>${group.name}</span>
-      <span class="layer-group-toggle" title="Check all">✓</span>
-      <span class="layer-group-toggle" title="Uncheck all">✗</span>
-      <span class="arrow">▼</span>`;
+    header.innerHTML = `<span class="layer-group-name">${group.name}</span>
+      <span class="layer-group-controls">
+        <span class="layer-group-toggle" title="Check all">✓</span>
+        <span class="layer-group-toggle" title="Uncheck all">✗</span>
+        <span class="arrow">▼</span>
+      </span>`;
 
     const body = document.createElement("div");
     body.className = "layer-group-body" + (group.collapsed ? " collapsed" : "");

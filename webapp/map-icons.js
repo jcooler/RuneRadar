@@ -509,9 +509,8 @@ async function loadMapOverlays(map, gameToLatLng) {
 
   kingdomLayer.addTo(map);
   townLayer.addTo(map);
-  const _li = (src, label) => `<img src="${src}" style="width:15px;height:15px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;" />${label}`;
-  layers[_li("https://oldschool.runescape.wiki/images/World_map_icon.png", "Kingdoms")] = kingdomLayer;
-  layers[_li("https://oldschool.runescape.wiki/images/Construction_icon.png", "Town Names")] = townLayer;
+  layers["Kingdoms"] = kingdomLayer;
+  layers["Town Names"] = townLayer;
 
   // ── Load POI icons ──
   try {
