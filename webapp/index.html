@@ -332,7 +332,7 @@
     .social-group-label:first-child { border-top: none; }
     .social-member {
       display: flex; align-items: center; gap: 8px;
-      padding: 6px 14px 6px 20px; font-size: 12px;
+      padding: 8px 14px 8px 20px; font-size: 12px; flex-wrap: wrap;
     }
     .social-member.clickable { cursor: pointer; }
     .social-member.clickable:hover { background: var(--bg-surface); }
@@ -344,18 +344,11 @@
       color: var(--text-muted); font-size: 11px; margin-left: auto;
       white-space: nowrap;
     }
-    .social-hover-card {
-      display: none; position: fixed; z-index: 1400;
-      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
-      padding: 14px 18px; width: 240px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4); backdrop-filter: blur(14px);
+    .social-member-details {
+      width: 100%; padding: 4px 0 2px 16px; font-size: 11px;
     }
-    .social-member { position: relative; }
-    .social-hover-card.visible { display: block; }
-    .social-hover-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .social-hover-world { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
-    .social-hover-activity { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
-    .social-hover-via { font-size: 11px; color: var(--text-muted); font-style: italic; }
+    .social-member-activity { color: var(--accent); font-weight: 600; }
+    .social-member-via { color: var(--text-muted); font-style: italic; }
     .social-member.offline { opacity: 0.5; }
     .social-member.offline .social-member-name { color: var(--text-muted); }
     .social-empty {

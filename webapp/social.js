@@ -291,27 +291,6 @@ function createSocialPanel() {
     if (member) panToPeer(member.dataset.peerRsn);
   });
 
-  // Hover card positioning
-  tabContent.addEventListener("mouseover", (e) => {
-    const member = e.target.closest(".social-member");
-    if (!member) return;
-    const card = member.querySelector(".social-hover-card");
-    if (!card) return;
-    const rect = member.getBoundingClientRect();
-    card.style.left = (rect.left - 10) + "px";
-    card.style.top = (rect.top - card.offsetHeight - 8) + "px";
-    // If card goes above viewport, show below instead
-    if (rect.top - card.offsetHeight - 8 < 0) {
-      card.style.top = (rect.bottom + 8) + "px";
-    }
-    card.classList.add("visible");
-  });
-  tabContent.addEventListener("mouseout", (e) => {
-    const member = e.target.closest(".social-member");
-    if (!member) return;
-    const card = member.querySelector(".social-hover-card");
-    if (card) card.classList.remove("visible");
-  });
 
   updateSocialPanel();
 }
@@ -404,17 +383,14 @@ function renderMember(data, isOffline = false) {
   const activity = escHtml(data.activity || "");
   const via = (data.via || []).map(v => v === "friends" ? "Friend" : v === "clan" ? "Clan" : "FC").join(", ");
 
+  const details = [activity, via].filter(Boolean).join(" · ");
+
   return `<div class="social-member${hasPos ? " clickable" : ""}${offlineClass}"
     ${hasPos ? `data-peer-rsn="${safeRsn}"` : ""}>
     <span class="social-member-dot" style="background:${color}"></span>
     <span class="social-member-name">${safeRsn}</span>
     <span class="social-member-info">${isOffline ? "Offline" : worldTag}</span>
-    <div class="social-hover-card">
-      <div class="social-hover-name" style="color:${color}">${safeRsn}</div>
-      ${worldTag ? `<div class="social-hover-world">${worldTag}</div>` : ""}
-      ${activity ? `<div class="social-hover-activity">${activity}</div>` : ""}
-      <div class="social-hover-via">${via || "Friend"}</div>
-    </div>
+    ${details ? `<div class="social-member-details"><span class="social-member-activity">${activity}</span>${activity && via ? " · " : ""}<span class="social-member-via">${via}</span></div>` : ""}
   </div>`;
 }
 
