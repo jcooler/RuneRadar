@@ -95,13 +95,34 @@ function createSilentTile(src, done, fallbackSrc) {
   return tile;
 }
 
+// Load tile index to avoid 404 requests
+let tileIndex = null;
+fetch("tile-index.json").then(r => r.json()).then(idx => { tileIndex = idx; }).catch(() => {});
+
+const BLANK_TILE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
 // Local tiles (generated from OSRS game cache)
-const localTileLayer = L.tileLayer("tiles/2/{plane}_{x}_{y}.png", {
+const localTileLayer = L.tileLayer("", {
   minZoom: -3, maxZoom: 5, maxNativeZoom: 2, minNativeZoom: 2, tileSize: 256,
-  errorTileUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
 });
-localTileLayer.getTileUrl = function (coords) {
-  return `tiles/2/${currentPlane}_${coords.x}_${-(coords.y + 1)}.png`;
+localTileLayer.createTile = function (coords, done) {
+  const tile = document.createElement("img");
+  tile.alt = "";
+  const x = coords.x;
+  const y = -(coords.y + 1);
+  const key = currentPlane + "_" + x;
+
+  // Check tile index — skip request if tile doesn't exist
+  if (tileIndex && (!tileIndex[key] || y < tileIndex[key][0] || y > tileIndex[key][1])) {
+    tile.src = BLANK_TILE;
+    setTimeout(() => done(null, tile), 0);
+    return tile;
+  }
+
+  tile.onload = function () { done(null, tile); };
+  tile.onerror = function () { tile.src = BLANK_TILE; done(null, tile); };
+  tile.src = `tiles/2/${currentPlane}_${x}_${y}.png`;
+  return tile;
 };
 localTileLayer.addTo(map);
 
@@ -613,12 +634,23 @@ initPathDrawing(map, gameToLatLng);
 
 // ── Minimap ─────────────────────────────────────────────
 
-const minimapTiles = L.tileLayer("tiles/2/0_{x}_{y}.png", {
+const minimapTiles = L.tileLayer("", {
   minZoom: -3, maxZoom: 5, maxNativeZoom: 2, minNativeZoom: 2, tileSize: 256,
-  errorTileUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
 });
-minimapTiles.getTileUrl = function (coords) {
-  return `tiles/2/0_${coords.x}_${-(coords.y + 1)}.png`;
+minimapTiles.createTile = function (coords, done) {
+  const tile = document.createElement("img");
+  tile.alt = "";
+  const x = coords.x, y = -(coords.y + 1);
+  const key = "0_" + x;
+  if (tileIndex && (!tileIndex[key] || y < tileIndex[key][0] || y > tileIndex[key][1])) {
+    tile.src = BLANK_TILE;
+    setTimeout(() => done(null, tile), 0);
+    return tile;
+  }
+  tile.onload = function () { done(null, tile); };
+  tile.onerror = function () { tile.src = BLANK_TILE; done(null, tile); };
+  tile.src = `tiles/2/0_${x}_${y}.png`;
+  return tile;
 };
 const minimap = new L.Control.MiniMap(minimapTiles, {
   position: "bottomleft",
