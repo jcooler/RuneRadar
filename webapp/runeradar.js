@@ -8,7 +8,7 @@
 const RUNERADAR_WS_PORT = 37780;
 const HTTP_PORTS = [8080, 8081];
 const POLL_INTERVAL = 600;
-const RECONNECT_INTERVAL = 3000;
+const RECONNECT_INTERVAL = 10000;
 
 // ── Saved Settings ──────────────────────────────────────
 let markerColor = localStorage.getItem("runeradar-color") || "#3eff3e";
@@ -514,7 +514,11 @@ function startConnectionLoop() {
   }
   setStatus("Connecting to RuneLite...", "connecting");
   connectWebSocket();
-  setInterval(() => { if (connectEnabled && !wsConnected) pollHttp(); }, POLL_INTERVAL);
+  // HTTP polling only on localhost (avoid spamming from hosted domain)
+  const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:";
+  if (isLocal) {
+    setInterval(() => { if (connectEnabled && !wsConnected) pollHttp(); }, POLL_INTERVAL);
+  }
   setInterval(() => {
     if (!connectEnabled) return;
     if (!wsConnected && (!ws || ws.readyState === WebSocket.CLOSED)) connectWebSocket();
