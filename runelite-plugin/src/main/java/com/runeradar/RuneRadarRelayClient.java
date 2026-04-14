@@ -29,6 +29,7 @@ public class RuneRadarRelayClient
     private final String relayUrl;
     private final String rsn;
     private final Consumer<String> onPeerMessage;
+    private final Runnable onReconnect;
 
     private WebSocketClient wsClient;
     private Timer pingTimer;
@@ -37,11 +38,12 @@ public class RuneRadarRelayClient
     private volatile boolean running = true;
     private volatile boolean identified = false;
 
-    public RuneRadarRelayClient(String relayUrl, String rsn, Consumer<String> onPeerMessage)
+    public RuneRadarRelayClient(String relayUrl, String rsn, Consumer<String> onPeerMessage, Runnable onReconnect)
     {
         this.relayUrl = relayUrl;
         this.rsn = rsn;
         this.onPeerMessage = onPeerMessage;
+        this.onReconnect = onReconnect;
     }
 
     public void connect()
@@ -107,6 +109,7 @@ public class RuneRadarRelayClient
                     identified = true;
                     startPingTimer();
                     log.info("RuneRadar Relay: Identified as {}", rsn);
+                    if (onReconnect != null) onReconnect.run();
                     break;
 
                 case "peer_list":

@@ -7,13 +7,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.runelite.api.Client;
 import net.runelite.api.FriendsChatManager;
-import net.runelite.api.FriendsChatMember;
+
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
-import net.runelite.api.clan.ClanChannel;
-import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.api.clan.ClanSettings;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.config.ConfigManager;
@@ -67,6 +65,7 @@ public class RuneRadarPlugin extends Plugin
 
     // Social: track last sent social state to avoid spamming updates
     private int socialUpdateTickCounter;
+    private int relayHeartbeatCounter;
     private static final int SOCIAL_UPDATE_INTERVAL = 100; // ~60 seconds
     private String lastSocialHash = "";
 
@@ -242,7 +241,7 @@ public class RuneRadarPlugin extends Plugin
         }
     }
 
-    private String detectActivity(boolean instanced)
+    private String detectActivity(int regionId, boolean instanced)
     {
         if (instanced) return "In an instance";
 
@@ -257,36 +256,26 @@ public class RuneRadarPlugin extends Plugin
             prefix = "Following the clues";
         }
 
-        // Get location name from game widget
-        String location = "";
-        try
-        {
-            int[][] widgetIds = {{90, 39}, {90, 38}, {90, 36}, {160, 22}, {161, 22}};
-            for (int[] wid : widgetIds)
-            {
-                net.runelite.api.widgets.Widget w = client.getWidget(wid[0], wid[1]);
-                if (w != null && w.getText() != null && !w.getText().isEmpty()
-                    && !w.getText().equals("null"))
-                {
-                    location = w.getText();
-                    break;
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            log.debug("RuneRadar: Error detecting activity", e);
-        }
+        // Get location/activity from region ID mapping
+        String location = ActivityDetector.forRegion(regionId);
+        if (location == null) location = "";
 
-        if (!prefix.isEmpty() && !location.isEmpty())
+        // If doing a boss/raid/minigame, that takes priority over quest/clue prefix
+        if (!prefix.isEmpty() && !location.isEmpty()
+            && !location.startsWith("Fighting") && !location.startsWith("Raiding")
+            && !location.startsWith("Playing") && !location.startsWith("Attempting"))
         {
             return prefix + " in " + location;
+        }
+        else if (!location.isEmpty())
+        {
+            return location;
         }
         else if (!prefix.isEmpty())
         {
             return prefix;
         }
-        return location;
+        return "";
     }
 
     @Subscribe
@@ -345,12 +334,17 @@ public class RuneRadarPlugin extends Plugin
             }
 
             // ── Relay: position + social updates ──
+            // Send position to relay — including periodic heartbeat when standing still
             boolean anySharingEnabled = config.shareFriends() || config.shareClan() || config.shareFc();
+            relayHeartbeatCounter++;
+            boolean heartbeat = relayHeartbeatCounter >= 50; // ~30 seconds
+            if (heartbeat) relayHeartbeatCounter = 0;
+
             if (relayClient != null && relayClient.isConnected() && anySharingEnabled)
             {
-                if (positionChanged)
+                if (positionChanged || heartbeat)
                 {
-                    String activity = detectActivity(isInstanced);
+                    String activity = detectActivity(reportLocation.getRegionID(), isInstanced);
                     List<String> friends = config.shareFriends() ? getFriendsList() : null;
                     String clanName = config.shareClan() ? getClanName() : null;
                     String fcName = config.shareFc() ? getFcName() : null;
