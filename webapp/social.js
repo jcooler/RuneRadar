@@ -343,7 +343,8 @@ function renderClanTab(contentEl, countEl) {
 function renderMember(data, isOffline = false) {
   const color = isOffline ? "#555" : getPeerColor(data.rsn);
   const world = data.world ? `W${data.world}` : "";
-  const info = world;
+  const activity = escHtml(data.activity || "");
+  const info = [world, activity].filter(Boolean).join(" · ");
   const hasPos = data.x && data.y && !isOffline;
   const offlineClass = isOffline ? " offline" : "";
   const safeRsn = escHtml(data.rsn);

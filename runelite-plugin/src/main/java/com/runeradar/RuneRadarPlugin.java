@@ -70,36 +70,6 @@ public class RuneRadarPlugin extends Plugin
     private static final int SOCIAL_UPDATE_INTERVAL = 100; // ~60 seconds
     private String lastSocialHash = "";
 
-    // Activity detection
-    private static final Map<Integer, String> REGION_ACTIVITIES = new HashMap<>();
-    static
-    {
-        REGION_ACTIVITIES.put(14484, "Grand Exchange");
-        REGION_ACTIVITIES.put(12850, "Varrock");
-        REGION_ACTIVITIES.put(12338, "Lumbridge");
-        REGION_ACTIVITIES.put(11828, "Falador");
-        REGION_ACTIVITIES.put(10804, "Ardougne");
-        REGION_ACTIVITIES.put(9776, "Camelot");
-        REGION_ACTIVITIES.put(13358, "Al Kharid");
-        REGION_ACTIVITIES.put(14646, "Edgeville");
-        REGION_ACTIVITIES.put(13878, "Canifis");
-        REGION_ACTIVITIES.put(6967, "Hosidius");
-        REGION_ACTIVITIES.put(6714, "Shayzien");
-        REGION_ACTIVITIES.put(14906, "Wilderness");
-        REGION_ACTIVITIES.put(15155, "Wilderness");
-        REGION_ACTIVITIES.put(12852, "Champions' Guild");
-        REGION_ACTIVITIES.put(11310, "Crafting Guild");
-        REGION_ACTIVITIES.put(11571, "Heroes' Guild");
-        REGION_ACTIVITIES.put(6461, "Woodcutting Guild");
-        REGION_ACTIVITIES.put(4922, "Farming Guild");
-        REGION_ACTIVITIES.put(7222, "Wintertodt Camp");
-        REGION_ACTIVITIES.put(14642, "Motherlode Mine");
-        REGION_ACTIVITIES.put(5536, "Chambers of Xeric");
-        REGION_ACTIVITIES.put(14386, "Theatre of Blood");
-        REGION_ACTIVITIES.put(13122, "Tombs of Amascut");
-        REGION_ACTIVITIES.put(9023, "Castle Wars");
-        REGION_ACTIVITIES.put(7513, "Fortis Colosseum");
-    }
 
     @Provides
     RuneRadarConfig provideConfig(ConfigManager configManager)
@@ -150,6 +120,11 @@ public class RuneRadarPlugin extends Plugin
                 {
                     server.broadcastRaw(peerMessage);
                 }
+            },
+            () -> {
+                // Force social update on next tick after connect/reconnect
+                lastSocialHash = "";
+                socialUpdateTickCounter = SOCIAL_UPDATE_INTERVAL;
             }
         );
         relayClient.connect();
@@ -257,13 +232,38 @@ public class RuneRadarPlugin extends Plugin
 
         log.debug("RuneRadar Relay: Social update — {} friends, clan={}, fc={}",
             friends.size(), clan, fc);
+        if (friends.size() <= 10)
+        {
+            log.info("RuneRadar Relay: Friends list: {}", friends);
+        }
+        else
+        {
+            log.info("RuneRadar Relay: First 5 friends: {}", friends.subList(0, Math.min(5, friends.size())));
+        }
     }
 
-    private String detectActivity(int regionId, boolean instanced)
+    private String detectActivity(boolean instanced)
     {
         if (instanced) return "In an instance";
-        String area = REGION_ACTIVITIES.get(regionId);
-        return area != null ? area : "";
+        try
+        {
+            // Use the widget that shows the location name in the top-left of the game
+            net.runelite.api.widgets.Widget locationWidget = client.getWidget(net.runelite.api.widgets.WidgetInfo.MINIMAP_WORLDMAP_ORB.getGroupId(), 0);
+            // Fallback: use the chunk location name from client
+            String location = client.getLocalPlayer() != null ? "" : "";
+
+            // Try getting the location text from the minimap area text widget
+            net.runelite.api.widgets.Widget areaWidget = client.getWidget(90, 39);
+            if (areaWidget != null && areaWidget.getText() != null && !areaWidget.getText().isEmpty())
+            {
+                return areaWidget.getText();
+            }
+        }
+        catch (Exception e)
+        {
+            log.debug("RuneRadar: Error detecting activity", e);
+        }
+        return "";
     }
 
     @Subscribe
@@ -322,11 +322,12 @@ public class RuneRadarPlugin extends Plugin
             }
 
             // ── Relay: position + social updates ──
-            if (relayClient != null && relayClient.isConnected())
+            boolean anySharingEnabled = config.shareFriends() || config.shareClan() || config.shareFc();
+            if (relayClient != null && relayClient.isConnected() && anySharingEnabled)
             {
                 if (positionChanged)
                 {
-                    String activity = detectActivity(reportLocation.getRegionID(), isInstanced);
+                    String activity = detectActivity(isInstanced);
                     List<String> friends = config.shareFriends() ? getFriendsList() : null;
                     String clanName = config.shareClan() ? getClanName() : null;
                     String fcName = config.shareFc() ? getFcName() : null;
