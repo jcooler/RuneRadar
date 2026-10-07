@@ -4,7 +4,7 @@
  *
  * Checks every TOWN_LABELS and KINGDOM_LABELS entry against icon density
  * in cache-icons.json. A label sitting in empty space (no nearby icons)
- * is suspicious — it may be misplaced or on the wrong coordinates.
+ * is suspicious - it may be misplaced or on the wrong coordinates.
  *
  * For each label, counts cache icons within several radii and flags:
  *   - RED:    0 icons within 30 tiles (likely misplaced or wrong coords)
@@ -152,17 +152,17 @@ for (const label of allLabels) {
   };
 
   if (close.count === 0 && medium.count === 0) {
-    // No icons within 30 tiles — check wider radius
+    // No icons within 30 tiles - check wider radius
     if (wide.count === 0 && !isUnderground) {
       entry.severity = 'RED';
       entry.reason = 'No cache icons within 50 tiles on surface plane';
     } else if (wide.count === 0 && isUnderground) {
       if (allPlanesClose > 0) {
         entry.severity = 'GREEN';
-        entry.reason = `Underground location — ${allPlanesClose} icons on other planes within 15 tiles`;
+        entry.reason = `Underground location - ${allPlanesClose} icons on other planes within 15 tiles`;
       } else {
         entry.severity = 'YELLOW';
-        entry.reason = 'Underground/instance location — no surface icons (expected)';
+        entry.reason = 'Underground/instance location - no surface icons (expected)';
       }
     } else {
       entry.severity = 'YELLOW';
@@ -194,7 +194,7 @@ for (let i = 0; i < allLabels.length; i++) {
 
 // ── Output results ──
 console.log('═══════════════════════════════════════════════════════════');
-console.log(' RED FLAGS — Labels likely misplaced (no icons within 50 tiles)');
+console.log(' RED FLAGS - Labels likely misplaced (no icons within 50 tiles)');
 console.log('═══════════════════════════════════════════════════════════');
 if (results.red.length === 0) {
   console.log('  (none)\n');
@@ -207,7 +207,7 @@ if (results.red.length === 0) {
 }
 
 console.log('═══════════════════════════════════════════════════════════');
-console.log(' YELLOW FLAGS — Labels worth checking');
+console.log(' YELLOW FLAGS - Labels worth checking');
 console.log('═══════════════════════════════════════════════════════════');
 if (results.yellow.length === 0) {
   console.log('  (none)\n');
@@ -223,7 +223,7 @@ if (results.yellow.length === 0) {
 }
 
 console.log('═══════════════════════════════════════════════════════════');
-console.log(` GREEN — ${results.green.length} labels look correctly placed`);
+console.log(` GREEN - ${results.green.length} labels look correctly placed`);
 console.log('═══════════════════════════════════════════════════════════');
 // Show green ones with fewest nearby icons (most marginal)
 const marginalGreens = results.green
@@ -232,7 +232,7 @@ const marginalGreens = results.green
 if (marginalGreens.length > 0) {
   console.log('  Marginal greens (only 1-2 icons within 15 tiles):');
   for (const r of marginalGreens) {
-    console.log(`    ~ ${r.name} @ (${r.x}, ${r.y}) — ${r.icons15} icons within 15 tiles`);
+    console.log(`    ~ ${r.name} @ (${r.x}, ${r.y}) - ${r.icons15} icons within 15 tiles`);
   }
 }
 console.log();
@@ -242,7 +242,7 @@ if (overlaps.length > 0) {
   console.log(' OVERLAPPING LABELS (< 20 tiles apart)');
   console.log('═══════════════════════════════════════════════════════════');
   for (const o of overlaps) {
-    console.log(`  ⚠ "${o.a}" & "${o.b}" — ${o.dist} tiles apart`);
+    console.log(`  ⚠ "${o.a}" & "${o.b}" - ${o.dist} tiles apart`);
     console.log(`    (${o.ax},${o.ay}) vs (${o.bx},${o.by})`);
   }
   console.log();

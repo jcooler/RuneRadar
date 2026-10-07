@@ -1,14 +1,12 @@
 /**
- * RuneRadar — Map Icons & Labels Layer
+ * RuneRadar - Map Icons & Labels Layer
  *
  * Loads POI icons from the OSRS Wiki GeoJSON data and renders them on the map.
  * Also adds town/city labels as a separate toggleable layer.
  */
 
-// Use local game cache sprites — exact same icons as the in-game OSRS world map
-// Falls back to wiki MainIcons.json if local file is unavailable
+// Use local game cache sprites - exact same icons as the in-game OSRS world map
 const ICON_LIST_URL = "local-icons.json";
-const ICON_LIST_FALLBACK = "https://maps.runescape.wiki/osrs/data/iconLists/MainIcons.json";
 const ICON_GEOJSON_URL = "cache-icons.json";
 
 // ── Icon Groups (for layer toggling) ────────────────────
@@ -36,15 +34,15 @@ const ICON_CATEGORIES = {
   "Agility":               { icons: ["agility_short-cut", "agility_training"], rep: "agility_short-cut" },
   "Minigames & Raids":     { icons: ["minigame", "raids_lobby", "bounty_hunter_store"], rep: "minigame" },
   "Houses":                { icons: ["house_portal", "estate_agent", "garden_supplier"], rep: "house_portal" },
-  "Shops — Weapons":       { icons: ["sword_shop", "archery_shop", "scimitar_shop", "mace_shop",
+  "Shops - Weapons":       { icons: ["sword_shop", "archery_shop", "scimitar_shop", "mace_shop",
     "axe_shop", "staff_shop", "magic_shop"], rep: "sword_shop" },
-  "Shops — Armour":        { icons: ["platebody_shop", "platelegs_shop", "plateskirt_shop",
+  "Shops - Armour":        { icons: ["platebody_shop", "platelegs_shop", "plateskirt_shop",
     "helmet_shop", "shield_shop", "chainmail_shop"], rep: "shield_shop" },
-  "Shops — Clothes":       { icons: ["clothes_shop", "silk_trader", "fur_trader", "dye_trader",
+  "Shops - Clothes":       { icons: ["clothes_shop", "silk_trader", "fur_trader", "dye_trader",
     "hairdresser", "makeover_mage"], rep: "clothes_shop" },
-  "Shops — Food & Drink":  { icons: ["food_shop", "bar", "kebab_seller", "vegetable_store",
+  "Shops - Food & Drink":  { icons: ["food_shop", "bar", "kebab_seller", "vegetable_store",
     "wine_trader", "tea_trader", "spice_shop"], rep: "food_shop" },
-  "Shops — General":       { icons: ["general_store", "gem_shop", "jewellery_shop", "jewellery",
+  "Shops - General":       { icons: ["general_store", "gem_shop", "jewellery_shop", "jewellery",
     "silver_shop", "amulet_shop", "candle_shop", "rope_trader", "newspaper_trader",
     "herbalist", "apothecary", "pet_insurance_shop", "taxidermist"], rep: "general_store" },
   "Stalls":                { icons: ["market_stall"], rep: "general_store" },
@@ -154,7 +152,7 @@ const TOWN_LABELS = [
   { name: "Quetzacalli", x: 1580, y: 3130, size: 15 },
   { name: "Ralos' Rise", x: 1475, y: 3000, size: 15 },
   { name: "Toll Gate", x: 3360, y: 3140, size: 15 },
-  // Ver Sinhaza removed — same location as Theatre of Blood (1 tile apart)
+  // Ver Sinhaza removed - same location as Theatre of Blood (1 tile apart)
   { name: "Slepe", x: 3724, y: 3370, size: 15 },
   { name: "Darkmeyer", x: 3625, y: 3370, size: 16 },
   { name: "Port Phasmatys", x: 3681, y: 3490, size: 15 },
@@ -236,7 +234,7 @@ const TOWN_LABELS = [
   { name: "Trollheim", x: 2890, y: 3676, size: 14 },
   { name: "Weiss", x: 2865, y: 3940, size: 14 },
   { name: "God Wars Dungeon", x: 2917, y: 3750, size: 14 },
-  // Void Knights' Outpost removed — same location as Pest Control (10 tiles apart)
+  // Void Knights' Outpost removed - same location as Pest Control (10 tiles apart)
 
   // Slayer / Boss areas
   { name: "Slayer Tower", x: 3430, y: 3535, size: 14 },
@@ -263,12 +261,12 @@ const TOWN_LABELS = [
   { name: "Forthos Ruin", x: 1700, y: 3570, size: 13 },
   { name: "Xeric's Lookout", x: 1585, y: 3530, size: 13 },
   { name: "Molch", x: 1304, y: 3663, size: 13 },
-  // Logava removed — NPC name (Logava Gricoller), not a location. Area covered by Kourend Woodland label.
+  // Logava removed - NPC name (Logava Gricoller), not a location. Area covered by Kourend Woodland label.
 
   // Varlamore additions
   { name: "Neypotzli", x: 1440, y: 2960, size: 14 },
   { name: "Stonecutter Outpost", x: 1760, y: 2960, size: 13 },
-  // Deepfin Point duplicate removed — real label is in Sailing Islands section
+  // Deepfin Point duplicate removed - real label is in Sailing Islands section
   { name: "Salvager Overlook", x: 1650, y: 3280, size: 13 },
   { name: "Outer Fortis", x: 1690, y: 3230, size: 14 },
   { name: "Locus Oasis", x: 1630, y: 2940, size: 13 },
@@ -298,7 +296,7 @@ const TOWN_LABELS = [
   { name: "The Great Conch", x: 3200, y: 2435, size: 16 },
   { name: "Summer Shore", x: 3155, y: 2415, size: 12 },
 
-  // Sailing islands — Unquiet Ocean
+  // Sailing islands - Unquiet Ocean
   { name: "The Onyx Crest", x: 2975, y: 2273, size: 14 },
   { name: "Dognose Island", x: 3048, y: 2648, size: 13 },
   { name: "Remote Island", x: 2961, y: 2610, size: 13 },
@@ -306,7 +304,7 @@ const TOWN_LABELS = [
   { name: "Rainbow's End", x: 2335, y: 2270, size: 12 },
   { name: "Charred Island", x: 2648, y: 2406, size: 13 },
 
-  // Sailing islands — Shrouded Ocean
+  // Sailing islands - Shrouded Ocean
   { name: "Anglers' Retreat", x: 2478, y: 2715, size: 13 },
   { name: "Isle of Bones", x: 2533, y: 2533, size: 13 },
   { name: "Tear of the Soul", x: 2333, y: 2768, size: 13 },
@@ -316,17 +314,17 @@ const TOWN_LABELS = [
   { name: "Laguna Aurorae", x: 1195, y: 2772, size: 13 },
   { name: "Sunbleak Island", x: 2209, y: 2330, size: 12 },
 
-  // Sailing islands — Western Ocean
+  // Sailing islands - Western Ocean
   { name: "Chinchompa Island", x: 1884, y: 3434, size: 13 },
   { name: "Lledrith Island", x: 2091, y: 3179, size: 13 },
   { name: "Buccaneers' Haven", x: 2080, y: 3685, size: 13 },
   { name: "Drumstick Isle", x: 2146, y: 3545, size: 12 },
 
-  // Sailing islands — Varlamore coast
+  // Sailing islands - Varlamore coast
   { name: "Vatrachos Island", x: 1887, y: 2984, size: 13 },
   { name: "Minotaurs' Rest", x: 1953, y: 3103, size: 12 },
 
-  // Sailing islands — Northern Ocean
+  // Sailing islands - Northern Ocean
   { name: "Grimstone", x: 2913, y: 4072, size: 14 },
   { name: "Brittle Isle", x: 1947, y: 4069, size: 13 },
 
@@ -345,7 +343,7 @@ const TOWN_LABELS = [
   // ── Misthalin additions ──
   { name: "Lumbridge Swamp", x: 3168, y: 3170, size: 13 },
   { name: "Paterdomus", x: 3405, y: 3506, size: 13 },
-  // Stronghold of Security removed — overlaps Barbarian Village (1 tile apart, underground)
+  // Stronghold of Security removed - overlaps Barbarian Village (1 tile apart, underground)
   { name: "Varrock Sewers", x: 3237, y: 3430, size: 11 },
   { name: "Exam Centre", x: 3360, y: 3340, size: 12 },
 
@@ -353,7 +351,7 @@ const TOWN_LABELS = [
   { name: "Baxtorian Falls", x: 2510, y: 3510, size: 13 },
   { name: "Underground Pass", x: 2440, y: 3313, size: 12 },
   { name: "Otto's Grotto", x: 2501, y: 3488, size: 12 },
-  // Ancient Cavern removed — overlaps Baxtorian Falls (2 tiles apart, underground)
+  // Ancient Cavern removed - overlaps Baxtorian Falls (2 tiles apart, underground)
   { name: "Wizards' Guild", x: 2593, y: 3085, size: 12 },
   { name: "McGrubor's Wood", x: 2650, y: 3490, size: 12 },
   { name: "Fight Arena", x: 2590, y: 3165, size: 12 },
@@ -365,7 +363,7 @@ const TOWN_LABELS = [
   { name: "Kharazi Jungle", x: 2830, y: 2925, size: 14 },
   { name: "Hardwood Grove", x: 2820, y: 3075, size: 12 },
   { name: "Brimhaven Dungeon", x: 2743, y: 3154, size: 12 },
-  // Nature Altar removed — covered by runecraft_altar POI icon
+  // Nature Altar removed - covered by runecraft_altar POI icon
 
   // ── Desert additions ──
   { name: "Shantay Pass", x: 3304, y: 3117, size: 13 },
@@ -419,7 +417,7 @@ const TOWN_LABELS = [
   // ── Other additions ──
   { name: "Gu'Tanoth", x: 2510, y: 3035, size: 14 },
   { name: "Jiggig", x: 2477, y: 3045, size: 12 },
-  // Marim removed — overlaps Ape Atoll label (12 tiles apart, same location)
+  // Marim removed - overlaps Ape Atoll label (12 tiles apart, same location)
   { name: "Puro-Puro", x: 2591, y: 4318, size: 14 },
   { name: "Blast Furnace", x: 2931, y: 10196, size: 13 },
   { name: "Museum Camp", x: 3763, y: 3869, size: 12 },
@@ -433,11 +431,54 @@ const TOWN_LABELS = [
  * Load all map overlays and add them to the map.
  * Returns an object of { categoryName: L.LayerGroup } for the layer control.
  */
+// Retain the complete searchable catalogue, but attach only nearby markers to
+// the document. The padded edge avoids flicker while the player or map moves.
+const ViewportLayer = L.LayerGroup.extend({
+  onAdd(map) {
+    this._map = map;
+    this._visible = new Set();
+    map.on("moveend resize", this._sync, this);
+    this._sync();
+  },
+  onRemove(map) {
+    map.off("moveend resize", this._sync, this);
+    for (const layer of this._visible) map.removeLayer(layer);
+    this._visible.clear();
+    this._map = null;
+  },
+  addLayer(layer) {
+    this._layers[L.stamp(layer)] = layer;
+    if (this._map) this._sync();
+    return this;
+  },
+  removeLayer(layer) {
+    const id = typeof layer === "number" ? layer : L.stamp(layer);
+    const target = this._layers[id];
+    if (target && this._map) this._map.removeLayer(target);
+    if (this._visible) this._visible.delete(target);
+    delete this._layers[id];
+    return this;
+  },
+  _sync() {
+    const bounds = this._map.getBounds().pad(0.25);
+    for (const layer of this.getLayers()) {
+      const visible = bounds.contains(layer.getLatLng());
+      if (visible && !this._visible.has(layer)) {
+        this._map.addLayer(layer);
+        this._visible.add(layer);
+      } else if (!visible && this._visible.has(layer)) {
+        this._map.removeLayer(layer);
+        this._visible.delete(layer);
+      }
+    }
+  },
+});
+
 async function loadMapOverlays(map, gameToLatLng) {
   const layers = {};
 
   // ── Load kingdom labels (zoom-responsive) ──
-  const kingdomLayer = L.layerGroup();
+  const kingdomLayer = new ViewportLayer();
   const kingdomMarkers = [];
 
   for (const k of KINGDOM_LABELS) {
@@ -456,7 +497,7 @@ async function loadMapOverlays(map, gameToLatLng) {
   }
 
   // ── Load town labels (zoom-responsive) ──
-  const townLayer = L.layerGroup();
+  const townLayer = new ViewportLayer();
   const townMarkers = [];
 
   for (const town of TOWN_LABELS) {
@@ -474,7 +515,7 @@ async function loadMapOverlays(map, gameToLatLng) {
     townMarkers.push({ marker, town });
   }
 
-  // Update label sizes on zoom — uses global fontScale from settings
+  // Update label sizes on zoom - uses global fontScale from settings
   function updateAllLabels() {
     const zoom = map.getZoom();
     const userScale = (typeof fontScale !== "undefined") ? fontScale : 1.0;
@@ -514,12 +555,10 @@ async function loadMapOverlays(map, gameToLatLng) {
 
   // ── Load POI icons ──
   try {
-    // Try local game cache sprites first, fall back to wiki
-    let iconListRes = await fetch(ICON_LIST_URL).catch(() => null);
-    if (!iconListRes || !iconListRes.ok) {
-      iconListRes = await fetch(ICON_LIST_FALLBACK);
-    }
-    const geojsonRes = await fetch(ICON_GEOJSON_URL);
+    const [iconListRes, geojsonRes] = await Promise.all([
+      fetch(ICON_LIST_URL), fetch(ICON_GEOJSON_URL),
+    ]);
+    if (!iconListRes.ok || !geojsonRes.ok) throw new Error("Local map icons unavailable");
 
     const iconListData = await iconListRes.json();
     const geojsonData = await geojsonRes.json();
@@ -530,9 +569,9 @@ async function loadMapOverlays(map, gameToLatLng) {
     // Create a layer group per category
     const categoryLayers = {};
     for (const cat of Object.keys(ICON_CATEGORIES)) {
-      categoryLayers[cat] = L.layerGroup();
+      categoryLayers[cat] = new ViewportLayer();
     }
-    categoryLayers["Uncategorized"] = L.layerGroup();
+    categoryLayers["Uncategorized"] = new ViewportLayer();
 
     // Build Leaflet icon cache
     const leafletIcons = {};
@@ -545,9 +584,9 @@ async function loadMapOverlays(map, gameToLatLng) {
       });
     }
 
-    // Custom runecraft altar icon — uses the OSRS Runecraft skill icon
+    // Custom runecraft altar icon - uses the OSRS Runecraft skill icon
     leafletIcons["runecraft_altar"] = L.icon({
-      iconUrl: "https://oldschool.runescape.wiki/images/Runecraft_icon.png",
+      iconUrl: "icons/transport/Runecraft_icon.png",
       iconSize: [15, 15],
       iconAnchor: [7, 7],
       popupAnchor: [0, -7],
@@ -572,7 +611,7 @@ async function loadMapOverlays(map, gameToLatLng) {
       const latlng = gameToLatLng(coords[0], coords[1]);
       const marker = L.marker(latlng, { icon: leafIcon });
 
-      // Add tooltip — use POI name lookup for quests, minigames, dungeons
+      // Add tooltip - use POI name lookup for quests, minigames, dungeons
       // Fuzzy match: try exact coord first, then search within 5 tiles
       const coordKey = coords[0] + "," + coords[1];
       const cx = coords[0], cy = coords[1];

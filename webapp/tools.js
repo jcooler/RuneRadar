@@ -1,5 +1,5 @@
 /**
- * RuneRadar — Map Tools
+ * RuneRadar - Map Tools
  * Search, coordinates, distance, pins, paths, transports
  */
 
@@ -39,12 +39,28 @@ function initSearch(map, gameToLatLng) {
   const clearBtn = document.getElementById("search-clear");
   if (!searchInput) return;
 
-  const searchIndex = [];
-  if (typeof TOWN_LABELS !== "undefined") TOWN_LABELS.forEach((t) => searchIndex.push({ name: t.name, x: t.x, y: t.y, type: "Town" }));
-  if (typeof KINGDOM_LABELS !== "undefined") KINGDOM_LABELS.forEach((k) => searchIndex.push({ name: k.name, x: k.x, y: k.y, type: "Region" }));
-  if (typeof FAIRY_RINGS !== "undefined") FAIRY_RINGS.forEach((f) => searchIndex.push({ name: `${f.code} — ${f.name}`, x: f.x, y: f.y, type: "Fairy Ring" }));
-  if (typeof SPIRIT_TREES !== "undefined") SPIRIT_TREES.filter((s) => s.x > 0).forEach((s) => searchIndex.push({ name: s.name, x: s.x, y: s.y, type: "Spirit Tree" }));
-  if (typeof TELEPORT_LOCATIONS !== "undefined") TELEPORT_LOCATIONS.forEach((t) => searchIndex.push({ name: t.name, x: t.x, y: t.y, type: t.book }));
+  // Search destinations are distinct from decorative labels and cache lobby markers.
+  // Use the named surface entrances already recorded in poi-names.js.
+  const raids = [
+    {name: "Chambers of Xeric", x: 1232, y: 3573, aliases: ["cox", "raid 1", "raids"]},
+    {name: "Theatre of Blood", x: 3676, y: 3219, aliases: ["tob", "raid 2", "raids", "theater of blood"]},
+    {name: "Tombs of Amascut", x: 3357, y: 2711, aliases: ["toa", "raid 3", "raids"]},
+  ];
+  const raidNames = new Set(raids.map(raid => raid.name.toLowerCase()));
+  const searchIndex = raids.map(raid => ({...raid, type: "Raid entrance", plane: 0}));
+  const searchKeys = new Set();
+  function addLocation(location) {
+    if (raidNames.has(location.name.toLowerCase())) return;
+    const key = `${location.name.toLowerCase()}:${location.x},${location.y},${location.plane || 0}`;
+    if (searchKeys.has(key)) return;
+    searchKeys.add(key);
+    searchIndex.push(location);
+  }
+  if (typeof TOWN_LABELS !== "undefined") TOWN_LABELS.forEach((t) => addLocation({ name: t.name, x: t.x, y: t.y, type: "Town" }));
+  if (typeof KINGDOM_LABELS !== "undefined") KINGDOM_LABELS.forEach((k) => addLocation({ name: k.name, x: k.x, y: k.y, type: "Region" }));
+  if (typeof FAIRY_RINGS !== "undefined") FAIRY_RINGS.forEach((f) => addLocation({ name: `${f.code} - ${f.name}`, x: f.x, y: f.y, type: "Fairy Ring" }));
+  if (typeof SPIRIT_TREES !== "undefined") SPIRIT_TREES.filter((s) => s.x > 0).forEach((s) => addLocation({ name: s.name, x: s.x, y: s.y, type: "Spirit Tree" }));
+  if (typeof TELEPORT_LOCATIONS !== "undefined") TELEPORT_LOCATIONS.forEach((t) => addLocation({ name: t.name, x: t.x, y: t.y, type: t.book }));
 
   // Add named POIs (quests, minigames, dungeons) to search
   function addNamedPois(lookup, type) {
@@ -54,14 +70,14 @@ function initSearch(map, gameToLatLng) {
       if (seen.has(name)) continue;
       seen.add(name);
       const [x, y] = key.split(",").map(Number);
-      searchIndex.push({ name, x, y, type });
+      addLocation({ name, x, y, type });
     }
   }
   // Add supplemental new-area POIs to search
   if (typeof NEW_AREA_POIS !== "undefined") {
     const seen = new Set();
     NEW_AREA_POIS.forEach(p => {
-      if (p.name && !seen.has(p.name)) { seen.add(p.name); searchIndex.push({ name: p.name, x: p.x, y: p.y, type: p.icon.replace(/[_-]/g, " ").replace(/\b\w/g, c => c.toUpperCase()) }); }
+      if (p.name && !seen.has(p.name)) { seen.add(p.name); addLocation({ name: p.name, x: p.x, y: p.y, type: p.icon.replace(/[_-]/g, " ").replace(/\b\w/g, c => c.toUpperCase()) }); }
     });
   }
 
@@ -74,8 +90,11 @@ function initSearch(map, gameToLatLng) {
   window._addCacheIconsToSearch = function (features, nameTable) {
     const seen = new Set();
     for (const f of features) {
-      const [x, y] = f.geometry.coordinates;
+      const [x, y, plane = 0] = f.geometry.coordinates;
       const iconKey = f.properties.icon;
+      // Cache lobby markers include multiple rendered floors/interiors for these raids.
+      // Search exposes their named surface entrances once, above.
+      if (iconKey === "raids_lobby") continue;
       const coordKey = x + "," + y;
       // Use named lookup if available, otherwise use icon type as name
       const name = (nameTable && nameTable[coordKey]) ||
@@ -84,7 +103,7 @@ function initSearch(map, gameToLatLng) {
       if (seen.has(dedupKey)) continue;
       seen.add(dedupKey);
       const type = iconKey.replace(/[_-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-      searchIndex.push({ name, x, y, type });
+      addLocation({ name, x, y, plane, type });
     }
   };
 
@@ -101,10 +120,10 @@ function initSearch(map, gameToLatLng) {
     const q = searchInput.value.toLowerCase().trim();
     searchResults.innerHTML = ""; selectedIdx = -1;
     if (q.length < 2) { searchResults.style.display = "none"; return; }
-    // Search name first, then type — prioritize name matches
-    const nameMatches = searchIndex.filter((loc) => loc.name.toLowerCase().includes(q));
+    // Search name first, then type - prioritize name matches
+    const nameMatches = searchIndex.filter((loc) => loc.name.toLowerCase().includes(q) || loc.aliases?.some(alias => alias.includes(q)));
     const typeMatches = nameMatches.length < 15
-      ? searchIndex.filter((loc) => !loc.name.toLowerCase().includes(q) && loc.type.toLowerCase().includes(q))
+      ? searchIndex.filter((loc) => !nameMatches.includes(loc) && loc.type.toLowerCase().includes(q))
       : [];
     const matches = [...nameMatches, ...typeMatches].slice(0, 15);
     if (matches.length === 0) { searchResults.style.display = "none"; return; }
@@ -113,7 +132,7 @@ function initSearch(map, gameToLatLng) {
       const div = document.createElement("div");
       div.className = "search-result";
       div.innerHTML = `<span class="sr-name">${escHtmlTools(loc.name)}</span><span class="sr-type">${escHtmlTools(loc.type)}</span>`;
-      div.addEventListener("click", () => { map.setView(gameToLatLng(loc.x, loc.y), 2); searchResults.style.display = "none"; searchInput.value = loc.name; searchInput.blur(); });
+      div.addEventListener("click", () => { map.fire("browsestart", {plane: loc.plane || 0}); map.setView(gameToLatLng(loc.x, loc.y), 2); searchResults.style.display = "none"; searchInput.value = loc.name; searchInput.blur(); });
       div.addEventListener("mouseenter", () => { selectedIdx = i; const els = searchResults.querySelectorAll(".search-result"); els.forEach((el, j) => el.classList.toggle("active", j === i)); });
       searchResults.appendChild(div);
     });
@@ -225,7 +244,7 @@ function initCustomMarkers(map, gameToLatLng) {
   if (!btn) return;
 
   // Load saved
-  JSON.parse(localStorage.getItem("runeradar-pins") || "[]").forEach((p) => addPin(p.x, p.y, p.note));
+  MapStorage.drawings("pins").forEach((p) => addPin(p.x, p.y, p.note));
 
   btn.addEventListener("click", () => { setActiveTool("pin", map); });
 
@@ -261,22 +280,22 @@ function initCustomMarkers(map, gameToLatLng) {
     }).addTo(markerLayer);
     marker._pinData = { x, y, note };
     marker.on("contextmenu", (e) => { e.originalEvent.preventDefault(); showConfirm(`Remove "${escHtmlTools(note) || "Pin"}"?`, `Delete this pin at (${x}, ${y})?`, () => { markerLayer.removeLayer(marker); saveAllPins(); }, "Remove Pin"); });
-    marker.bindTooltip(`(${x}, ${y})${note ? " — " + escHtmlTools(note) : ""}`, { direction: "top", offset: [0, -20] });
+    marker.bindTooltip(`(${x}, ${y})${note ? " - " + escHtmlTools(note) : ""}`, { direction: "top", offset: [0, -20] });
   }
 
   function saveAllPins() {
     const pins = []; markerLayer.eachLayer((l) => { if (l._pinData) pins.push(l._pinData); });
-    localStorage.setItem("runeradar-pins", JSON.stringify(pins));
+    MapStorage.setItem("runeradar-pins", JSON.stringify(pins));
   }
 
   function updatePinList() {
     const pl = document.getElementById("pin-list");
-    const pins = JSON.parse(localStorage.getItem("runeradar-pins") || "[]");
+    const pins = MapStorage.drawings("pins");
     pl.innerHTML = pins.length === 0 ? '<div class="empty-msg">No pins yet</div>' : "";
     pins.forEach((p) => {
       const item = document.createElement("div"); item.className = "pin-item";
       item.innerHTML = `<span>📍 ${escHtmlTools(p.note || "Pin")}</span><span class="pin-coords">(${p.x}, ${p.y})</span>`;
-      item.addEventListener("click", () => { map.setView(gameToLatLng(p.x, p.y), 2); pl.style.display = "none"; });
+      item.addEventListener("click", () => { map.fire("browsestart"); map.setView(gameToLatLng(p.x, p.y), 2); pl.style.display = "none"; });
       pl.appendChild(item);
     });
   }
@@ -286,7 +305,7 @@ function initCustomMarkers(map, gameToLatLng) {
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
       showConfirm("Clear everything?", "This will delete ALL of your saved pins and drawn paths. This cannot be undone.", () => {
-        markerLayer.clearLayers(); localStorage.removeItem("runeradar-pins"); localStorage.removeItem("runeradar-paths");
+        markerLayer.clearLayers(); MapStorage.removeItem("runeradar-pins"); MapStorage.removeItem("runeradar-paths");
         if (window._pathLayer) window._pathLayer.clearLayers();
         showToast("Cleared all pins & paths");
       });
@@ -297,8 +316,8 @@ function initCustomMarkers(map, gameToLatLng) {
 
   window.exportPinsAndPaths = function () {
     const data = {
-      pins: JSON.parse(localStorage.getItem("runeradar-pins") || "[]"),
-      paths: JSON.parse(localStorage.getItem("runeradar-paths") || "[]"),
+      pins: MapStorage.drawings("pins"),
+      paths: MapStorage.drawings("paths"),
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -329,7 +348,7 @@ function initCustomMarkers(map, gameToLatLng) {
               isFinite(p.x) && isFinite(p.y) &&
               (p.note === undefined || typeof p.note === "string")
             ).map(p => ({ x: Math.round(p.x), y: Math.round(p.y), note: (p.note || "").slice(0, 200) }));
-            const existing = JSON.parse(localStorage.getItem("runeradar-pins") || "[]");
+            const existing = MapStorage.drawings("pins");
             const existingKeys = new Set(existing.map(p => p.x + "," + p.y));
             for (const pin of validPins) {
               const key = pin.x + "," + pin.y;
@@ -338,7 +357,7 @@ function initCustomMarkers(map, gameToLatLng) {
                 addPin(pin.x, pin.y, pin.note);
               }
             }
-            localStorage.setItem("runeradar-pins", JSON.stringify(existing));
+            MapStorage.setItem("runeradar-pins", JSON.stringify(existing));
           }
           if (data.paths && Array.isArray(data.paths)) {
             // Validate path point arrays
@@ -346,10 +365,10 @@ function initCustomMarkers(map, gameToLatLng) {
               Array.isArray(path) && path.length >= 2 && path.length <= 1000 &&
               path.every(p => typeof p.x === "number" && typeof p.y === "number" && isFinite(p.x) && isFinite(p.y))
             );
-            const existingPaths = JSON.parse(localStorage.getItem("runeradar-paths") || "[]");
+            const existingPaths = MapStorage.drawings("paths");
             existingPaths.push(...validPaths);
-            localStorage.setItem("runeradar-paths", JSON.stringify(existingPaths));
-            // Reload paths would require re-init — just notify user
+            MapStorage.setItem("runeradar-paths", JSON.stringify(existingPaths));
+            // Reload paths would require re-init - just notify user
           }
           if (typeof showToast === "function") {
             showToast(`Imported ${(data.pins || []).length} pins, ${(data.paths || []).length} paths`);
@@ -377,7 +396,7 @@ function initPathDrawing(map, gameToLatLng) {
   if (!btn) return;
 
   // Load saved
-  JSON.parse(localStorage.getItem("runeradar-paths") || "[]").forEach((p) => addSavedPath(p));
+  MapStorage.drawings("paths").forEach((p) => addSavedPath(p));
 
   btn.addEventListener("click", () => {
     if (activeTool === "path") {
@@ -453,11 +472,11 @@ function initPathDrawing(map, gameToLatLng) {
   function savePaths() {
     const paths = [];
     pathLayer.eachLayer((l) => { if (l._pathData) paths.push(l._pathData); });
-    localStorage.setItem("runeradar-paths", JSON.stringify(paths));
+    MapStorage.setItem("runeradar-paths", JSON.stringify(paths));
   }
 
   function updatePathList(pl) {
-    const paths = JSON.parse(localStorage.getItem("runeradar-paths") || "[]");
+    const paths = MapStorage.drawings("paths");
     pl.innerHTML = paths.length === 0 ? '<div class="empty-msg">No paths yet</div>' : "";
     paths.forEach((points) => {
       const start = points[0], end = points[points.length - 1];
@@ -466,7 +485,7 @@ function initPathDrawing(map, gameToLatLng) {
       item.innerHTML = `<span>✏️ ${totalDist} tiles</span><span class="pin-coords">(${start.x}, ${start.y}) → (${end.x}, ${end.y})</span>`;
       item.addEventListener("click", () => {
         const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-        map.setView(gameToLatLng(mid.x, mid.y), 1); pl.style.display = "none";
+        map.fire("browsestart"); map.setView(gameToLatLng(mid.x, mid.y), 1); pl.style.display = "none";
       });
       pl.appendChild(item);
     });
@@ -490,8 +509,8 @@ function loadTransportLayers(map, gameToLatLng) {
   FAIRY_RINGS.forEach((fr) => {
     const fSize = Math.round(12 * fs);
     L.marker(gameToLatLng(fr.x, fr.y), {
-      icon: L.divIcon({ className: "transport-icon fairy-ring", html: `<span style="font-size:${fSize}px"><img src="https://oldschool.runescape.wiki/images/Fairy_ring_icon.png" style="height:${Math.round(fSize * 1.4)}px;vertical-align:middle;image-rendering:pixelated;margin-right:3px;" />${fr.code}</span>`, iconSize: [60, 24], iconAnchor: [30, 30] }),
-    }).addTo(fairyLayer).bindTooltip(`${fr.code} — ${fr.name}`, { direction: "top", offset: [0, -12] });
+      icon: L.divIcon({ className: "transport-icon fairy-ring", html: `<span style="font-size:${fSize}px"><img src="icons/transport/Fairy_ring_icon.png" style="height:${Math.round(fSize * 1.4)}px;vertical-align:middle;image-rendering:pixelated;margin-right:3px;" />${fr.code}</span>`, iconSize: [60, 24], iconAnchor: [30, 30] }),
+    }).addTo(fairyLayer).bindTooltip(`${fr.code} - ${fr.name}`, { direction: "top", offset: [0, -12] });
   });
   fairyLayer.addTo(map);
   const icoStyle = "width:15px;height:15px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;";

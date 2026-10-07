@@ -1,0 +1,57 @@
+[
+  {
+    "path": "icons/transport/Amulet_of_glory.png",
+    "source": "https://oldschool.runescape.wiki/images/Amulet_of_glory.png",
+    "sha256": "152eb54cb2098bbcfd947a04063568596278e469c1cb4036030ca13995fa3af7"
+  },
+  {
+    "path": "icons/transport/Ancient_staff.png",
+    "source": "https://oldschool.runescape.wiki/images/Ancient_staff.png",
+    "sha256": "7bc3f3ef28a7cec67e71e561064656853c22929c9d155cb55f12150903d77819"
+  },
+  {
+    "path": "icons/transport/Combat_bracelet.png",
+    "source": "https://oldschool.runescape.wiki/images/Combat_bracelet.png",
+    "sha256": "b7021a2388cb1fcc74ad00a82827ba51483f6aff2298737219af29fb42a896d2"
+  },
+  {
+    "path": "icons/transport/Fairy_ring_icon.png",
+    "source": "https://oldschool.runescape.wiki/images/Fairy_ring_icon.png",
+    "sha256": "467579dff9108b3b7b29fbd735f8190e1cddb844d0041b90bf701aaa5497f5ad"
+  },
+  {
+    "path": "icons/transport/Games_necklace.png",
+    "source": "https://oldschool.runescape.wiki/images/Games_necklace.png",
+    "sha256": "e9b09166c87bee4f6e8c0a81658a656f36713e7162bb36553cc1a2c09c416b9e"
+  },
+  {
+    "path": "icons/transport/Law_rune.png",
+    "source": "https://oldschool.runescape.wiki/images/Law_rune.png",
+    "sha256": "b0e149c8d05e359a34722f56668251980bc3b0330594c56c4b4c593b8212c1ce"
+  },
+  {
+    "path": "icons/transport/Lunar_staff.png",
+    "source": "https://oldschool.runescape.wiki/images/Lunar_staff.png",
+    "sha256": "99eb5c23b3faa54b5eb75964f08da3bc3b4861ab7940aba368c07b8d08a2acf5"
+  },
+  {
+    "path": "icons/transport/Ring_of_dueling.png",
+    "source": "https://oldschool.runescape.wiki/images/Ring_of_dueling.png",
+    "sha256": "f24a84040c62c322a8338ad6147a5e18dd6bcae37ae69aa99af8b526daad4e69"
+  },
+  {
+    "path": "icons/transport/Ring_of_wealth.png",
+    "source": "https://oldschool.runescape.wiki/images/Ring_of_wealth.png",
+    "sha256": "1ad164b08fb2068d0724c7a79582a3163cb2ff6d3c084b9e63aa86800fe5b08f"
+  },
+  {
+    "path": "icons/transport/Runecraft_icon.png",
+    "source": "https://oldschool.runescape.wiki/images/Runecraft_icon.png",
+    "sha256": "63eec535f90cd53c485a36bd24aa1f33e0cef681aa53b570079d8641baa5d317"
+  },
+  {
+    "path": "icons/transport/Skills_necklace.png",
+    "source": "https://oldschool.runescape.wiki/images/Skills_necklace.png",
+    "sha256": "a287c018161cb940a79da68e287bdf00637962a9771243b326c3e1cc761af100"
+  }
+]

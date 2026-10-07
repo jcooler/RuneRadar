@@ -1,5 +1,5 @@
 /**
- * RuneRadar — POI Name Lookup Tables
+ * RuneRadar - POI Name Lookup Tables
  *
  * Maps game coordinates ("x,y") to human-readable names for quest starts,
  * minigames, and dungeon entrances. Used by map-icons.js to add named
@@ -193,7 +193,7 @@ const QUEST_NAMES = {
 };
 
 // ── Minigame Locations ─────────────────────────────────────
-// Source: RuneLite WorldMap plugin — MinigameLocation.java
+// Source: RuneLite WorldMap plugin - MinigameLocation.java
 const MINIGAME_NAMES = {
   "2853,3537": "Animation Room",
   "2531,3569": "Barbarian Assault",
@@ -256,7 +256,7 @@ const MINIGAME_NAMES = {
 };
 
 // ── Dungeon Entrances & Links ─────────────────────────────
-// Source: RuneLite WorldMap plugin — DungeonLocation.java (370+ entries)
+// Source: RuneLite WorldMap plugin - DungeonLocation.java (370+ entries)
 // Covers both "dungeon" and "dungeon_link" icon types
 const DUNGEON_NAMES = {
   "3439,3232": "Abandoned Mine", "3452,3244": "Abandoned Mine",
@@ -345,7 +345,7 @@ const DUNGEON_NAMES = {
   "3149,3347": "Sourhog Cave", "1296,3374": "Stalker Den", "1324,3364": "Stalker Den",
   "3080,3420": "Stronghold of Security", "2427,3424": "Stronghold Slayer Dungeon",
   "2883,3397": "Taverley Dungeon", "2841,3424": "Taverley Dungeon",
-  "1174,3429": "Temple — Desert Treasure 2", "2676,3404": "Temple of Ikov",
+  "1174,3429": "Temple - Desert Treasure 2", "2676,3404": "Temple of Ikov",
   "3676,3219": "Theatre of Blood",
   "1289,3134": "Dragon Nest", "1278,3168": "Passage to Gemstone Crab",
   "1351,3124": "Passage to Gemstone Crab", "1246,3036": "Passage to Gemstone Crab",

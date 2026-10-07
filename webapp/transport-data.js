@@ -1,5 +1,5 @@
 /**
- * RuneRadar — Transport Network Data
+ * RuneRadar - Transport Network Data
  * Fairy rings, spirit trees, teleport locations
  */
 
@@ -46,7 +46,7 @@ const FAIRY_RINGS = [
   { code: "DLQ", name: "North of Nardah", x: 3423, y: 3016 },
   { code: "DLR", name: "Poison Waste", x: 2213, y: 3099 },
   { code: "DLS", name: "Myreque Hideout", x: 3447, y: 9824 },
-  // Added from wiki — missing fairy rings
+  // Added from wiki - missing fairy rings
   { code: "AJP", name: "Varlamore (near Fortis)", x: 1651, y: 3010 },
   { code: "AJQ", name: "Dorgesh-Kaan south dungeon", x: 2735, y: 5221 },
   { code: "AKP", name: "Necropolis", x: 3284, y: 2705 },
@@ -78,7 +78,7 @@ const SPIRIT_TREES = [
   { name: "POH (if planted)", x: 0, y: 0 }, // skip, player-specific
 ];
 
-const WIKI_IMG = "https://oldschool.runescape.wiki/images";
+const WIKI_IMG = "icons/transport";
 
 const TELEPORT_LOCATIONS = [
   // Standard spellbook

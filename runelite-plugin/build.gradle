@@ -2,16 +2,30 @@ plugins {
     id 'java'
 }
 
+// Compatibility entry point for the existing developer launcher.
+sourceSets {
+    main {
+        java.srcDirs = ['../src/main/java']
+        resources.srcDirs = ['../src/main/resources']
+    }
+    test {
+        java.srcDirs = ['../src/test/java']
+        resources.srcDirs = ['../src/test/resources']
+    }
+}
+
 group = 'com.runeradar'
 version = '1.0.0'
 
-def runeLiteVersion = 'latest.release'
+def runeLiteVersion = findProperty('runeLiteVersion') ?: 'latest.release'
 def pluginMainClass = 'com.runeradar.RuneRadarPluginTest'
 
 repositories {
-    mavenLocal()
     mavenCentral()
-    maven { url 'https://repo.runelite.net' }
+    maven {
+        url 'https://repo.runelite.net'
+        content { includeGroupByRegex('net\\.runelite.*') }
+    }
 }
 
 dependencies {
@@ -26,6 +40,7 @@ dependencies {
     testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
     testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
     testImplementation 'org.slf4j:slf4j-api:1.7.36'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 java {
@@ -35,6 +50,7 @@ java {
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
+    options.release.set(11)
 }
 
 tasks.register('run', JavaExec) {
@@ -43,4 +59,13 @@ tasks.register('run', JavaExec) {
 
     jvmArgs '-ea'
     args '--developer-mode', '--debug'
+}
+
+
+// Test-only synthetic position source for browser QA; excluded from the plugin jar.
+tasks.register('browserFixture', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.runeradar.PersonalMapFixture'
+    standardInput = System.in
+    args findProperty('fixtureLink') ?: '../.local/qa/fixture-link.txt'
 }
