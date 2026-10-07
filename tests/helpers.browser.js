@@ -22,7 +22,7 @@ async (page) => {
       assert(await p.evaluate(()=>+map.getPane('playerPane').style.zIndex > +map.getPane('objectivePane').style.zIndex),'player hidden by objectives');
     });
     await check('target navigation pauses follow and later movement does not steal focus',async()=>{
-      await p.getByRole('button',{name:'Show quest target 1 on map'}).click(); await settle();
+      await p.getByRole('button',{name:'Show Example quest on map, floor 1'}).click(); await settle();
       assert(await p.evaluate(()=>!followPlayer&&currentPlane===1&&!map.hasLayer(playerMarker)),'target did not change floor/pause');
       await update({clue:clues,quest},3225,3220); await settle();
       assert(await p.evaluate(()=>currentPlane===1&&Math.abs(map.getCenter().lng-3222)<.5),'movement stole focus');

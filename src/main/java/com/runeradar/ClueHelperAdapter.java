@@ -32,8 +32,7 @@ final class ClueHelperAdapter
         if (clue == null) return HelperData.status("idle", "Read a clue in game to show its current objective here.");
         String title = "Clue scroll", text = "";
         boolean approximate = false;
-        WorldPoint[] points = clue instanceof LocationsClueScroll ? ((LocationsClueScroll) clue).getLocations(plugin)
-            : clue instanceof LocationClueScroll ? ((LocationClueScroll) clue).getLocations(plugin) : null;
+        WorldPoint[] points = locations(clue, plugin);
         if (clue instanceof HotColdClue)
         {
             HotColdClue hot = (HotColdClue) clue;
@@ -45,11 +44,22 @@ final class ClueHelperAdapter
         }
         else if (clue instanceof ThreeStepCrypticClue)
         {
-            title = "Three-step cryptic clue";
+            title = "Three-part cryptic clue";
             List<String> steps = new ArrayList<>();
-            for (Map.Entry<CrypticClue, Boolean> entry : ((ThreeStepCrypticClue) clue).getClueSteps())
-                if (!Boolean.TRUE.equals(entry.getValue())) steps.add(entry.getKey().getSolution(plugin));
-            text = String.join("\n", steps);
+            List<HelperData.Target> targets = new ArrayList<>();
+            List<Map.Entry<CrypticClue, Boolean>> parts = ((ThreeStepCrypticClue) clue).getClueSteps();
+            int completed = 0;
+            for (Map.Entry<CrypticClue, Boolean> entry : parts)
+            {
+                if (Boolean.TRUE.equals(entry.getValue())) { completed++; continue; }
+                CrypticClue part = entry.getKey();
+                String instruction = part.getSolution(plugin);
+                steps.add(instruction);
+                addTargets(targets, locations(part, plugin), label(part, plugin), instruction);
+            }
+            // This is progress within a three-part clue, not the length of the treasure trail.
+            String progress = parts.size() == 3 ? completed + " of 3 parts complete" : null;
+            return HelperData.objective(title, String.join("\n", steps), targets, false, progress);
         }
         else if (clue instanceof CrypticClue)
         {
@@ -85,6 +95,35 @@ final class ClueHelperAdapter
         }
         else if (clue instanceof FaloTheBardClue) { title = "Falo the Bard"; text = ((FaloTheBardClue) clue).getText(); }
         else return HelperData.status("unsupported", "This clue type has no supported map objective yet. Use RuneLite's clue overlay.");
-        return HelperData.objective(title, text, points, approximate);
+        List<HelperData.Target> targets = new ArrayList<>();
+        addTargets(targets, points, approximate ? "Possible search area" : label(clue, plugin), text);
+        return HelperData.objective(title, text, targets, approximate, null);
+    }
+
+    private static WorldPoint[] locations(ClueScroll clue, ClueScrollPlugin plugin)
+    {
+        return clue instanceof LocationsClueScroll ? ((LocationsClueScroll) clue).getLocations(plugin)
+            : clue instanceof LocationClueScroll ? ((LocationClueScroll) clue).getLocations(plugin) : null;
+    }
+
+    private static String label(ClueScroll clue, ClueScrollPlugin plugin)
+    {
+        if (clue instanceof NpcClueScroll)
+        {
+            String[] names = ((NpcClueScroll) clue).getNpcs(plugin);
+            List<String> known = new ArrayList<>();
+            if (names != null) for (String name : names)
+                if (name != null && !name.isBlank() && !known.contains(name)) known.add(name);
+            if (!known.isEmpty()) return String.join(" / ", known);
+        }
+        if (clue.isRequiresSpade()) return "Dig location";
+        if (clue instanceof EmoteClue) return "Emote location";
+        return "Clue location";
+    }
+
+    private static void addTargets(List<HelperData.Target> targets, WorldPoint[] points, String label, String description)
+    {
+        if (points != null) for (WorldPoint point : points)
+            if (point != null) targets.add(new HelperData.Target(point, label, description));
     }
 }

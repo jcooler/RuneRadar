@@ -171,3 +171,19 @@ test('unavailable snapshots must not carry helper details', () => {
   s.message(snapshot(1,{availability:'instanced',position:undefined,helpers:{clue:objective()}}));
   assert.equal(f.states.at(-1),'rejected');assert.equal(f.positions.length,0);
 });
+
+test('optional clue destination metadata is bounded without breaking older clients', () => {
+  const valid = objective({progress:'1 of 3 parts complete',targets:[{x:3018,y:3250,plane:0,label:'The Face',description:'Talk to The Face.'}]});
+  const f=fixture();f.connection.start();const s=f.sockets[0];s.open();s.message(accepted);
+  s.message(snapshot(1,{helpers:{clue:valid}}));
+  assert.equal(f.positions.at(-1).helpers.clue.targets[0].label,'The Face');
+  s.message(snapshot(2,{helpers:{clue:objective()}}));
+  assert.equal(f.states.at(-1),'connected');
+  for (const extra of [{progress:'x'.repeat(81)},{progress:3},{targets:[{x:1,y:2,plane:0,label:'x'.repeat(101)}]},
+    {targets:[{x:1,y:2,plane:0,description:'x'.repeat(1201)}]},{targets:[{x:1,y:2,plane:0,label:{name:'bad'}}]},
+    {targets:[{x:1,y:2,plane:0,description:'bad'+String.fromCharCode(1)}]}]) {
+    const bad=fixture();bad.connection.start();const socket=bad.sockets[0];socket.open();socket.message(accepted);
+    socket.message(snapshot(1,{helpers:{clue:objective(extra)}}));
+    assert.equal(bad.states.at(-1),'rejected');assert.equal(bad.positions.length,0);
+  }
+});

@@ -2,9 +2,9 @@ package com.runeradar;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import net.runelite.api.coords.WorldPoint;
 
 /** Only the current objective, never inventories, quest variables or helper internals. */
@@ -14,12 +14,13 @@ final class HelperData
     final String state;
     final String title;
     final String text;
-    final List<PlayerData.Position> targets;
+    final List<Target> targets;
     final int totalTargets;
     final boolean approximate;
+    final String progress;
 
-    private HelperData(String state, String title, String text, List<PlayerData.Position> targets,
-        int totalTargets, boolean approximate)
+    private HelperData(String state, String title, String text, List<Target> targets,
+        int totalTargets, boolean approximate, String progress)
     {
         this.state = state;
         this.title = plain(title, 100);
@@ -27,26 +28,52 @@ final class HelperData
         this.targets = Collections.unmodifiableList(targets);
         this.totalTargets = totalTargets;
         this.approximate = approximate;
+        this.progress = progress == null ? null : plain(progress, 80);
     }
 
     static HelperData status(String state, String text)
     {
-        return new HelperData(state, "", text, Collections.emptyList(), 0, false);
+        return new HelperData(state, "", text, Collections.emptyList(), 0, false, null);
     }
 
     static HelperData objective(String title, String text, WorldPoint[] points, boolean approximate)
     {
-        Set<WorldPoint> unique = new LinkedHashSet<>();
+        List<Target> targets = new ArrayList<>();
         if (points != null) for (WorldPoint point : points)
-            if (point != null && point.getX() >= 0 && point.getX() <= 65535 && point.getY() >= 0 && point.getY() <= 65535
-                && point.getPlane() >= 0 && point.getPlane() <= 3) unique.add(point);
-        List<PlayerData.Position> targets = new ArrayList<>();
-        for (WorldPoint point : unique)
+            if (point != null) targets.add(new Target(point, "", ""));
+        return objective(title, text, targets, approximate, null);
+    }
+
+    static HelperData objective(String title, String text, List<Target> candidates, boolean approximate, String progress)
+    {
+        Map<WorldPoint, Target> unique = new LinkedHashMap<>();
+        for (Target target : candidates)
+            if (target != null && target.x >= 0 && target.x <= 65535 && target.y >= 0 && target.y <= 65535
+                && target.plane >= 0 && target.plane <= 3)
+                unique.putIfAbsent(new WorldPoint(target.x, target.y, target.plane), target);
+        List<Target> targets = new ArrayList<>();
+        for (Target target : unique.values())
         {
             if (targets.size() == MAX_TARGETS) break;
-            targets.add(new PlayerData.Position(point.getX(), point.getY(), point.getPlane()));
+            targets.add(target);
         }
-        return new HelperData("active", title, text, targets, unique.size(), approximate);
+        return new HelperData("active", title, text, targets, unique.size(), approximate, progress);
+    }
+
+    static final class Target
+    {
+        final int x;
+        final int y;
+        final int plane;
+        final String label;
+        final String description;
+
+        Target(WorldPoint point, String label, String description)
+        {
+            x = point.getX(); y = point.getY(); plane = point.getPlane();
+            this.label = plain(label, 100);
+            this.description = plain(description, 1200);
+        }
     }
 
     static String plain(String value, int limit)

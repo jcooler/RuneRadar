@@ -125,15 +125,22 @@
       Number.isInteger(point.y) && point.y >= 0 && point.y <= 65535 &&
       Number.isInteger(point.plane) && point.plane >= 0 && point.plane <= 3;
   }
+  function optionalHelperText(value, limit) {
+    return value == null || (typeof value === "string" && value.length <= limit &&
+      !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value));
+  }
+  function validHelperTarget(point) {
+    return validPoint(point) && optionalHelperText(point.label, 100) && optionalHelperText(point.description, 1200);
+  }
   function validHelper(value) {
     if (value == null) return true;
     if (!["active", "idle", "missing", "unsupported"].includes(value.state) ||
         typeof value.title !== "string" || value.title.length > 100 ||
         typeof value.text !== "string" || value.text.length > 1200 ||
         /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value.title + value.text) ||
-        !Array.isArray(value.targets) || value.targets.length > 16 || !value.targets.every(validPoint) ||
+        !Array.isArray(value.targets) || value.targets.length > 16 || !value.targets.every(validHelperTarget) ||
         !Number.isSafeInteger(value.totalTargets) || value.totalTargets < value.targets.length ||
-        value.totalTargets > 10000 || typeof value.approximate !== "boolean") return false;
+        value.totalTargets > 10000 || typeof value.approximate !== "boolean" || !optionalHelperText(value.progress, 80)) return false;
     return value.state === "active" || (value.targets.length === 0 && value.totalTargets === 0);
   }
 
