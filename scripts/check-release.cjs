@@ -15,7 +15,7 @@ const localFile = p => {
 };
 const html = read('webapp/index.html');
 for (const match of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/g)) localFile(match[1]);
-for (const manifest of ['vendor/manifest.json', 'icons/transport/sources.json']) {
+for (const manifest of ['vendor/manifest.json', 'icons/transport/sources.json', 'icons/clue/sources.json']) {
   for (const entry of JSON.parse(read('webapp/' + manifest))) {
     const hash = crypto.createHash('sha256').update(fs.readFileSync(localFile(entry.path))).digest('hex');
     assert.equal(hash, entry.sha256, `Changed pinned asset: ${entry.path}`);

@@ -8,7 +8,7 @@ window.RuneRadarObjectives = {
     let current = null, signature = '';
     const names = {clue: 'Clue assistance', quest: 'Quest assistance'};
     // Fixed local artwork. Helper text is always rendered through textContent.
-    const clueSymbol = '<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><path d="M7 5h15c-3 0-3 4-3 4v12H6V9H4V7c0-2 3-2 3-2Z" fill="#f1d8a1" stroke="#614421" stroke-width="1.5"/><path d="M7 5c-3 0-3 4 0 4h12m3-4c3 0 3 4 0 4h-3M6 21c0 4 4 4 4 0h12c0 4-4 4-6 4H9" fill="#c69a56" stroke="#614421" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12h7m-7 3h5m0 3 3 3m0-3-3 3" fill="none" stroke="#805d30" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    const clueSymbol = '<img src="icons/clue/clue-scroll.png" width="36" height="32" alt="" aria-hidden="true" draggable="false">';
     const questSymbol = '<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><path d="m7 4 17 17-3 3L4 7V4Zm14 0L4 21l3 3L24 7V4Z" fill="#dcecff" stroke="#36658c" stroke-width="1.5"/><path d="m4 17 7 7m6-20 7 7" stroke="#dba758" stroke-width="3"/></svg>';
     const element = (tag, className, text) => {
       const node = document.createElement(tag);
@@ -20,6 +20,9 @@ window.RuneRadarObjectives = {
       if (objective.approximate) return `Possible search area${objective.targets.length > 1 ? ' ' + (index + 1) : ''}`;
       return point.label || objective.title || (kind === 'clue' ? 'Clue location' : 'Quest location');
     };
+    // Upstairs clues mark the building on the ground map. Keep their real floor
+    // for instructions and retain underground x/y coordinates without projection.
+    const displayPlane = (kind, point) => kind === 'clue' ? 0 : point.plane;
     function targetContext(kind, objective, point, index) {
       const content = element('div', 'objective-context');
       content.append(element('strong', '', targetName(kind, objective, point, index)));
@@ -35,13 +38,33 @@ window.RuneRadarObjectives = {
         const objective = current?.[kind];
         if (!objective || objective.state !== 'active') continue;
         objective.targets.forEach((point, index) => {
-          if (point.plane !== getPlane()) return;
+          if (displayPlane(kind, point) !== getPlane()) return;
           const label = `${names[kind]}: ${targetName(kind, objective, point, index)}`;
           const marker = L.marker([point.y, point.x], {pane:'objectivePane', alt:label, keyboard:true,
             icon:L.divIcon({className:`objective-marker ${kind}${objective.approximate ? ' approximate' : ''}`,
-              html:kind === 'clue' ? clueSymbol : questSymbol, iconSize:[34,34], iconAnchor:[17,17]})});
+              html:kind === 'clue' ? clueSymbol : questSymbol,
+              iconSize:kind === 'clue' ? [32,39] : [34,34],
+              iconAnchor:kind === 'clue' ? [16,39] : [17,17],
+              tooltipAnchor:kind === 'clue' ? [0,-20] : [0,0],
+              popupAnchor:kind === 'clue' ? [0,-36] : [0,0]})});
           marker.bindTooltip(targetContext(kind, objective, point, index), {className:'objective-tooltip',direction:'top',offset:[0,-18]});
           marker.bindPopup(targetContext(kind, objective, point, index), {className:'objective-popup',minWidth:240,maxWidth:260,autoPan:false});
+          marker.on('popupopen', ({popup}) => {
+            const node = popup.getElement();
+            node.classList.remove('below-marker');
+            popup.options.offset = L.point(0, 7);
+            popup.update();
+            const bounds = node.getBoundingClientRect(), panel = container.getBoundingClientRect();
+            const below = marker.getElement().getBoundingClientRect().bottom + 12;
+            // Keep touch context clear of the objective card without moving the map.
+            if (bounds.left < panel.right && bounds.right > panel.left &&
+                bounds.top < panel.bottom && bounds.bottom > panel.top &&
+                below + bounds.height < map.getContainer().getBoundingClientRect().bottom) {
+              popup.options.offset = L.point(0, 7 + below - bounds.top);
+              node.classList.add('below-marker');
+              popup.update();
+            }
+          });
           marker.on('add', () => marker.getElement()?.setAttribute('aria-label', label));
           marker.addTo(layer);
         });
@@ -74,9 +97,9 @@ window.RuneRadarObjectives = {
             : multiple ? `Show ${point.label || 'location ' + (index + 1)}` : 'Show on map';
           const button = element('button', '', action);
           button.type = 'button';
-          button.setAttribute('aria-label', `Show ${targetName(kind, objective, point, index)} on map${point.plane > 0 ? ', floor ' + point.plane : ''}`);
-          if (point.plane > 0) button.append(element('span', 'objective-floor', 'Floor ' + point.plane));
-          button.addEventListener('click', () => showTarget(point));
+          button.setAttribute('aria-label', `Show ${targetName(kind, objective, point, index)} on map${kind === 'quest' && point.plane > 0 ? ', floor ' + point.plane : ''}`);
+          if (kind === 'quest' && point.plane > 0) button.append(element('span', 'objective-floor', 'Floor ' + point.plane));
+          button.addEventListener('click', () => showTarget(point, displayPlane(kind, point)));
           targets.append(button);
         });
         body.append(targets);

@@ -22,9 +22,9 @@ async (page) => {
       assert(text==='Show on map','Unclear action: '+text);
       assert(await p.locator('.objective-progress').count()===0,'invented progress');
     });
-    await check('parchment marker exposes full context on hover and keyboard focus',async()=>{
+    await check('native clue marker exposes full context on hover and keyboard focus',async()=>{
       const marker=p.locator('.objective-marker.clue');
-      assert(await marker.locator('svg').count()===1,'missing parchment symbol');
+      assert(await marker.locator('img').getAttribute('src')==='icons/clue/clue-scroll.png','missing native clue sprite');
       assert((await marker.innerText()).trim()==='','letter placeholder remains');
       await marker.hover();
       assert((await (await overlay('.objective-tooltip')).innerText()).includes(instruction),'missing hover instruction');
@@ -51,7 +51,8 @@ async (page) => {
       assert(await p.locator('.objective-progress').innerText({timeout:1500})==='1 of 3 parts complete','part progress missing');
       const buttons=await p.locator('.objective-targets').innerText();
       assert(!buttons.includes('Target')&&!buttons.includes('Ground'),'internal target labels remain');
-      assert(buttons.includes('Floor 1'),'useful floor information missing');
+      assert(!buttons.includes('Floor'),'clue action implies changing map floors');
+      assert(await p.locator('.objective-marker.clue').count()===2,'upstairs clue part missing from ground map');
     });
     await check('search areas remain approximate and clearing removes context',async()=>{
       await update(clue({title:'Hot / cold clue',approximate:true}));

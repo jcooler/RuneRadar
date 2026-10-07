@@ -21,6 +21,9 @@
 .storage-notice { font-size:12px; line-height:1.5; color:var(--text-secondary); margin:8px 0; }
 .storage-notice a { color:var(--accent); }
 
+.objective-marker.clue { display:block; background:transparent url("icons/clue/clue-arrow.png") no-repeat; border:0; border-radius:0; box-shadow:none; filter:drop-shadow(0 1px 2px #000b); overflow:hidden; }
+.objective-marker.clue img { position:absolute; top:0; left:0; width:36px; height:32px; max-width:none; pointer-events:none; image-rendering:pixelated; }
+.objective-marker.clue.approximate { outline:2px dashed #ffd596; outline-offset:2px; border-radius:4px; }
 .objective-marker svg { width:28px; height:28px; pointer-events:none; }
 .objective-marker:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
 .objective-progress { color:var(--text-secondary); font-size:12px; margin:0 0 8px; }
@@ -34,3 +37,5 @@
 .objective-popup .leaflet-popup-tip { background:var(--bg-panel-solid); }
 .objective-popup .leaflet-popup-content { max-width:calc(100vw - 64px); max-height:240px; overflow:auto; }
 .objective-popup .leaflet-popup-close-button { color:var(--text-secondary); }
+
+.objective-popup.below-marker .leaflet-popup-tip-container { top:-20px; bottom:auto; transform:rotate(180deg); }

@@ -12,8 +12,9 @@ the Plugin Hub.
 - Free browsing while the player marker keeps updating. Use the navigation
   arrow or Space to return to your location and resume following.
 - Optional clue instructions and supported target markers from RuneLite's
-  Clue Scroll plugin, with parchment markers and destination details on hover
-  or tap. Clue assistance starts off.
+  Clue Scroll plugin, with RuneLite clue icons and destination details on hover
+  or tap. Upstairs clues mark the building on the ground map. Clue assistance
+  starts off.
 - Local pins, paths, distance measurement, import and export.
 - Dark, light and Old School themes.
 

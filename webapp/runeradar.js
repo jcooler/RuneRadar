@@ -145,9 +145,9 @@ function switchPlane(newPlane) {
 
 let objectives = null;
 objectives = RuneRadarObjectives.create({map, container: document.getElementById("objectives"),
-  getPlane: () => currentPlane, showTarget: point => {
+  getPlane: () => currentPlane, showTarget: (point, plane) => {
     pauseFollowing();
-    switchPlane(point.plane);
+    switchPlane(plane);
     syncPlayerFloor();
     map.setView(gameToLatLng(point.x, point.y), Math.max(map.getZoom(), PLAYER_FOCUS_ZOOM));
   }});
