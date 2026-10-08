@@ -1,28 +1,28 @@
 /**
- * RuneRadar — OSRS Live Map
+ * RuneRadar - OSRS Live Map
  */
 
-// escHtml() defined in social.js (loaded first)
-
-// ── Config ──────────────────────────────────────────────
-const RUNERADAR_WS_PORT = 37780;
-const HTTP_PORTS = [8080, 8081];
-const POLL_INTERVAL = 600;
-const RECONNECT_INTERVAL = 10000;
+function escHtml(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
 // ── Saved Settings ──────────────────────────────────────
-let markerColor = localStorage.getItem("runeradar-color") || "#3eff3e";
-let showLocationLabel = localStorage.getItem("runeradar-label") !== "false";
-let autoFollow = localStorage.getItem("runeradar-follow") !== "false";
-let fontScale = parseFloat(localStorage.getItem("runeradar-fontscale") || "1.0");
-let currentTheme = localStorage.getItem("runeradar-theme") || "dark";
+let markerColor = MapStorage.getItem("runeradar-color") || "#3eff3e";
+let showLocationLabel = MapStorage.getItem("runeradar-label") !== "false";
+let autoFollow = MapStorage.getItem("runeradar-follow") !== "false";
+let showFloorLayouts = MapStorage.getItem("runeradar-floor-layouts") === "true";
+let fontScale = parseFloat(MapStorage.getItem("runeradar-fontscale") || "1.0");
+if (!Number.isFinite(fontScale) || fontScale < 0.5 || fontScale > 3) fontScale = 1;
+let currentTheme = MapStorage.getItem("runeradar-theme") || "dark";
+if (!["dark", "light", "game"].includes(currentTheme)) currentTheme = "dark";
+if (!/^#[0-9a-f]{6}$/i.test(markerColor)) markerColor = "#3eff3e";
 
 // ── Theme System ────────────────────────────────────────
 
 function applyTheme(theme) {
   currentTheme = theme;
   document.body.className = `theme-${theme}`;
-  localStorage.setItem("runeradar-theme", theme);
+  MapStorage.setItem("runeradar-theme", theme);
   // Update the theme selector if it exists
   const sel = document.getElementById("settingsTheme");
   if (sel && sel.value !== theme) sel.value = theme;
@@ -69,8 +69,10 @@ function gameToLatLng(x, y) {
 // ── Tile Layers with Plane Support ──────────────────────
 
 let currentPlane = 0;
+let requestedPlane = 0;
+const getMapPlane = plane => showFloorLayouts ? plane : 0;
 
-// Silent tile loader — hides broken tiles instead of showing broken image icons
+// Silent tile loader - hides broken tiles instead of showing broken image icons
 function createSilentTile(src, done, fallbackSrc) {
   const tile = document.createElement("img");
   tile.alt = "";
@@ -95,45 +97,72 @@ function createSilentTile(src, done, fallbackSrc) {
   return tile;
 }
 
-// Load tile index to avoid 404 requests
-let tileIndex = null;
-fetch("tile-index.json").then(r => r.json()).then(idx => { tileIndex = idx; }).catch(() => {});
-
+// Exact tile membership prevents requests for holes inside sparse map regions.
 const BLANK_TILE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+const tileManifestReady = fetch("tile-manifest.json").then(response => {
+  if (!response.ok) throw new Error("Tile manifest unavailable");
+  return response.json();
+}).then(data => ({detail: new Set(data.detail), overview: new Set(data.overview)})).catch(() => null);
 
-// Local tiles (generated from OSRS game cache)
+function cancelTile({tile}) {
+  tile._cancelled = true;
+  tile.onload = tile.onerror = null;
+}
+
+function createIndexedTile(coords, done, overview = false) {
+  const tile = document.createElement("img");
+  tile.alt = "";
+  const key = `${overview ? 0 : currentPlane}_${coords.x}_${-(coords.y + 1)}`;
+  tileManifestReady.then(manifest => {
+    if (tile._cancelled) return;
+    if (manifest && !manifest[overview ? "overview" : "detail"].has(key)) {
+      tile.src = BLANK_TILE;
+      done(null, tile);
+      return;
+    }
+    tile.onload = () => done(null, tile);
+    tile.onerror = () => {
+      tile.onload = tile.onerror = null;
+      tile.src = BLANK_TILE;
+      done(null, tile);
+    };
+    tile.src = `tiles/${overview ? "overview" : "2"}/${key}.png`;
+  });
+  return tile;
+}
+
 const localTileLayer = L.tileLayer("", {
   minZoom: -3, maxZoom: 5, maxNativeZoom: 2, minNativeZoom: 2, tileSize: 256,
 });
-localTileLayer.createTile = function (coords, done) {
-  const tile = document.createElement("img");
-  tile.alt = "";
-  const x = coords.x;
-  const y = -(coords.y + 1);
-  const key = currentPlane + "_" + x;
-
-  // Check tile index — skip request if tile doesn't exist
-  if (tileIndex && (!tileIndex[key] || y < tileIndex[key][0] || y > tileIndex[key][1])) {
-    tile.src = BLANK_TILE;
-    setTimeout(() => done(null, tile), 0);
-    return tile;
-  }
-
-  tile.onload = function () { done(null, tile); };
-  tile.onerror = function () { tile.src = BLANK_TILE; done(null, tile); };
-  tile.src = `tiles/2/${currentPlane}_${x}_${y}.png`;
-  return tile;
-};
+localTileLayer.createTile = (coords, done) => createIndexedTile(coords, done);
+localTileLayer.on("tileunload tileabort", cancelTile);
 localTileLayer.addTo(map);
 
 /** Switch the map to show a different plane (floor level) */
 function switchPlane(newPlane) {
+  requestedPlane = newPlane;
+  newPlane = getMapPlane(newPlane);
   if (newPlane === currentPlane) return;
   currentPlane = newPlane;
   localTileLayer.redraw();
+  objectives?.refreshPlane();
 }
 
-map.setView(gameToLatLng(3222, 3218), 0);
+let objectives = null;
+objectives = RuneRadarObjectives.create({map, container: document.getElementById("objectives"),
+  getPlane: () => currentPlane, getDisplayPlane: getMapPlane, showTarget: (point, plane) => {
+    pauseFollowing();
+    switchPlane(plane);
+    syncPlayerFloor();
+    map.setView(gameToLatLng(point.x, point.y), Math.max(map.getZoom(), PLAYER_FOCUS_ZOOM));
+  }});
+
+const PLAYER_FOCUS_ZOOM = 3;
+map.setView(gameToLatLng(3222, 3218), PLAYER_FOCUS_ZOOM);
+
+// A separate pane keeps the player above every town and POI, regardless of y.
+map.createPane("playerPane");
+map.getPane("playerPane").style.zIndex = "625";
 
 // ── Player Marker & Label ───────────────────────────────
 
@@ -148,32 +177,75 @@ function makePlayerIcon(color) {
 
 function makePlayerLabel(name) {
   const size = Math.round(16 * fontScale);
+  const upstairs = playerPlane > 0 && !showFloorLayouts;
+  const floorLabel = upstairs ? `<span class="player-floor">Upstairs${playerPlane > 1 ? ` · Floor ${playerPlane}` : ""}</span>` : "";
   return L.divIcon({
     className: "player-label",
-    html: `<span style="font-size:${size}px">${escHtml(name || "Your Location")}</span>`,
-    iconSize: [120, 24],
-    iconAnchor: [60, 34],
+    html: `<span style="font-size:${size}px">${escHtml(name || "Your Location")}</span>${floorLabel}`,
+    iconSize: [120, upstairs ? 38 : 24],
+    iconAnchor: [60, upstairs ? 48 : 34],
   });
 }
 
 let playerMarker = null;
 let playerLabelMarker = null;
 let followPlayer = autoFollow;
-let currentPlayerName = "Your Location";
+let currentPlayerName = "Your location";
+let playerPlane = null;
+const locateButton = document.getElementById("locate-btn");
 
-map.on("mousedown", () => {
-  if (autoFollow) return; // don't break follow if auto-follow is on
-  followPlayer = false;
-});
+function setFollowing(following) {
+  followPlayer = following;
+  locateButton.classList.toggle("active", following);
+  locateButton.setAttribute("aria-pressed", String(following));
+  locateButton.setAttribute("aria-label", following ? "Pause following your location" : "Follow my location");
+  locateButton.title = following ? "Pause following your location" : "Follow my location (Space)";
+  locateButton.querySelector("span").textContent = following ? "Following you" : "Follow my location";
+}
 
-// ── Locate Button ───────────────────────────────────────
+function pauseFollowing() { setFollowing(false); }
 
-document.getElementById("locate-btn").addEventListener("click", () => {
-  if (playerMarker) {
-    followPlayer = true;
-    map.setView(playerMarker.getLatLng(), Math.max(map.getZoom(), 1), { animate: true });
+function syncPlayerFloor() {
+  for (const marker of [playerMarker, playerLabelMarker]) {
+    if (!marker) continue;
+    if (getMapPlane(playerPlane) === currentPlane) {
+      if (!map.hasLayer(marker)) marker.addTo(map);
+    } else if (map.hasLayer(marker)) map.removeLayer(marker);
   }
+}
+
+function locatePlayer() {
+  if (!playerMarker) return;
+  setFollowing(true);
+  switchPlane(playerPlane);
+  syncPlayerFloor();
+  map.setView(playerMarker.getLatLng(), Math.max(map.getZoom(), PLAYER_FOCUS_ZOOM), { animate: true });
+}
+
+// Only user navigation pauses following. Programmatic player pans do not.
+map.on("dragstart", pauseFollowing);
+map.on("browsestart", ({plane = 0}) => {
+  pauseFollowing();
+  map.stop();
+  switchPlane(plane);
+  syncPlayerFloor();
 });
+const mapContainer = map.getContainer();
+mapContainer.addEventListener("wheel", pauseFollowing, {passive: true});
+mapContainer.addEventListener("touchstart", pauseFollowing, {passive: true});
+mapContainer.addEventListener("dblclick", pauseFollowing);
+mapContainer.addEventListener("keydown", event => {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "-", "="].includes(event.key)) pauseFollowing();
+}, true);
+mapContainer.addEventListener("click", event => {
+  if (event.target.closest(".leaflet-control-zoom")) pauseFollowing();
+}, true);
+
+locateButton.addEventListener("click", () => {
+  if (followPlayer) pauseFollowing();
+  else locatePlayer();
+});
+setFollowing(followPlayer);
 
 // ── UI Elements ─────────────────────────────────────────
 
@@ -181,9 +253,6 @@ const statusEl = document.getElementById("status");
 const infoEl = document.getElementById("player-info");
 const nameEl = document.getElementById("p-name");
 const coordsEl = document.getElementById("p-coords");
-const hpEl = document.getElementById("p-hp");
-const prayEl = document.getElementById("p-pray");
-const runEl = document.getElementById("p-run");
 
 const FLOOR_NAMES = ["Ground", "1st Floor", "2nd Floor", "3rd Floor"];
 
@@ -194,17 +263,20 @@ function setStatus(text, cls) {
 
 function updatePlayerInfo(data) {
   infoEl.classList.remove("hidden");
-  document.getElementById("locate-btn").classList.remove("hidden");
+  const instanced = data.availability === "instanced";
+  locateButton.classList.toggle("hidden", instanced);
 
-  currentPlayerName = data.name || "Player";
+  currentPlayerName = data.account?.name || "Your location";
   nameEl.textContent = currentPlayerName;
+  const account = data.account;
+  const area = instanced ? "Instanced area" : RuneRadarAreas.getArea(data.x, data.y);
+  document.getElementById("p-world").textContent = account ? `W${account.world}${area ? ` · ${area}` : ""}` : "";
+  document.getElementById("p-hp").textContent = account ? `HP ${account.hitpoints}` : "";
+  document.getElementById("p-prayer").textContent = account ? `Prayer ${account.prayer}` : "";
+  document.getElementById("p-run").textContent = account ? `Run ${account.runEnergy}%` : "";
+  document.getElementById("p-stats").hidden = !account;
   const floor = FLOOR_NAMES[data.plane] || `Floor ${data.plane}`;
-  const instanceTag = data.instanced ? " · Instanced" : "";
-  const flagImg = data.world && typeof getWorldFlagHtml === "function" ? getWorldFlagHtml(data.world) : "";
-  coordsEl.innerHTML = `(${data.x}, ${data.y}) ${floor}${data.world ? " · " + flagImg + "W" + data.world : ""}${instanceTag}`;
-  hpEl.textContent = data.hitpoints || "?";
-  prayEl.textContent = data.prayer || "?";
-  runEl.textContent = data.runEnergy || "?";
+  coordsEl.textContent = instanced ? "Position unavailable" : `(${data.x}, ${data.y}) ${floor}`;
 }
 
 function hidePlayerInfo() {
@@ -216,16 +288,16 @@ function updatePosition(x, y, data) {
   const latlng = gameToLatLng(x, y);
   const plane = data.plane || 0;
 
-  // Switch plane/floor if it changed
-  switchPlane(plane);
+  playerPlane = plane;
+  if (followPlayer) switchPlane(plane);
 
+  const firstPosition = !playerMarker;
+  if (firstPosition && followPlayer) {
+    map.setView(latlng, Math.max(map.getZoom(), PLAYER_FOCUS_ZOOM), {animate: false});
+  }
   if (!playerMarker) {
-    playerMarker = L.marker(latlng, { icon: makePlayerIcon(markerColor), zIndexOffset: 1000 }).addTo(map);
-    playerMarker.on("click", () => {
-      followPlayer = true;
-      map.panTo(playerMarker.getLatLng());
-    });
-    followPlayer = true;
+    playerMarker = L.marker(latlng, { icon: makePlayerIcon(markerColor), pane: "playerPane", zIndexOffset: 1000 });
+    playerMarker.on("click", locatePlayer);
   }
 
   playerMarker.setLatLng(latlng);
@@ -233,10 +305,11 @@ function updatePosition(x, y, data) {
 
   // Update or create the label
   if (showLocationLabel) {
-    const labelText = data.name || "Your Location";
+    const labelText = data.account?.name || "Your location";
     if (!playerLabelMarker) {
       playerLabelMarker = L.marker(latlng, {
         icon: makePlayerLabel(labelText),
+        pane: "playerPane",
         interactive: false,
         zIndexOffset: 999,
       }).addTo(map);
@@ -249,323 +322,79 @@ function updatePosition(x, y, data) {
     playerLabelMarker = null;
   }
 
-  if (followPlayer || autoFollow) {
+  syncPlayerFloor();
+  if (followPlayer) {
     map.panTo(latlng, { animate: true, duration: 0.3 });
   }
 
   updatePlayerInfo(data);
+  objectives.update(data.helpers);
 }
 
-// ── Quest Helper Rendering ──────────────────────────────
-
-const questLayer = L.layerGroup().addTo(map);
-let questTargetMarker = null;
-let questPathLine = null;
-let questInfoEl = null;
-
-function handleQuestHelper(data) {
-  // Clear old quest markers
-  questLayer.clearLayers();
-  questTargetMarker = null;
-  questPathLine = null;
-
-  if (!data.quest) {
-    // Quest deselected — hide info
-    if (questInfoEl) questInfoEl.style.display = "none";
-    return;
-  }
-
-  // Show quest info panel
-  if (!questInfoEl) {
-    questInfoEl = document.createElement("div");
-    questInfoEl.id = "quest-info";
-    questInfoEl.style.cssText = "position:fixed;top:56px;right:12px;z-index:1000;background:var(--bg-panel);border:1px solid #f0c040;border-radius:8px;padding:10px 14px;backdrop-filter:blur(10px);max-width:340px;";
-    document.body.appendChild(questInfoEl);
-  }
-  questInfoEl.style.display = "block";
-  const hasWp = data.waypoints && data.waypoints.length > 0;
-  const wp = hasWp ? data.waypoints[0] : null;
-  questInfoEl.innerHTML = `
-    <div style="color:#f0c040;font-size:14px;font-weight:700;">📜 ${escHtml(data.quest)}</div>
-    ${data.stepText ? `<div style="color:var(--text);font-size:13px;margin-top:6px;line-height:1.5;">${escHtml(data.stepText)}</div>` : ""}
-    ${wp ? `<div style="color:var(--text-secondary);font-size:11px;margin-top:8px;">(${wp.x}, ${wp.y})</div>` : ""}
-    <button id="quest-goto" style="background:var(--accent-bg);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;margin-top:8px;width:100%;">Go to location</button>
-  `;
-  document.getElementById("quest-goto")?.addEventListener("click", () => {
-    if (wp) {
-      map.setView(gameToLatLng(wp.x, wp.y), 2, { animate: true });
-    } else if (questTargetMarker) {
-      map.setView(questTargetMarker.getLatLng(), 2, { animate: true });
-    }
-  });
-
-  // Draw target waypoint markers with quest icon
-  if (data.waypoints && data.waypoints.length > 0) {
-    data.waypoints.forEach((wp) => {
-      const questFontSize = Math.round(13 * fontScale);
-      const questIconSize = Math.round(28 * fontScale);
-      const marker = L.marker(gameToLatLng(wp.x, wp.y), {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="text-align:center;">
-            <div style="color:#f0c040;font-size:${questFontSize}px;font-weight:700;white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000;margin-bottom:2px;">${escHtml(data.quest)}</div>
-            <img src="icons/1454.png" style="width:${questIconSize}px;height:${questIconSize}px;image-rendering:pixelated;filter:drop-shadow(0 0 6px #f0c040);" />
-          </div>`,
-          iconSize: [120, 48],
-          iconAnchor: [60, 48],
-        }),
-        zIndexOffset: 900,
-      }).addTo(questLayer);
-      marker.bindTooltip(`${escHtml(data.quest)} (${wp.x}, ${wp.y})`, { direction: "top", offset: [0, -10] });
-      questTargetMarker = marker;
-    });
-  }
-
-  // Draw path line
-  if (data.path && data.path.length > 1) {
-    questPathLine = L.polyline(
-      data.path.map((p) => gameToLatLng(p.x, p.y)),
-      { color: "#f0c040", weight: 3, opacity: 0.7, dashArray: "8,6" }
-    ).addTo(questLayer);
-  }
+// ── Personal connection ─────────────────────────────────
+function clearPersonalPosition() {
+  clearPlayerPosition();
+  objectives.clear();
 }
 
-// ── Clue Scroll Rendering ───────────────────────────────
-
-const clueLayer = L.layerGroup().addTo(map);
-let clueMarker = null;
-let clueInfoEl = null;
-
-function handleClueScroll(data) {
-  clueLayer.clearLayers();
-  clueMarker = null;
-
-  if (!data.location) {
-    if (clueInfoEl) clueInfoEl.style.display = "none";
-    return;
-  }
-
-  // Show clue info
-  if (!clueInfoEl) {
-    clueInfoEl = document.createElement("div");
-    clueInfoEl.id = "clue-info";
-    clueInfoEl.style.cssText = "position:fixed;top:56px;left:60px;z-index:1000;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;backdrop-filter:blur(10px);max-width:340px;";
-    document.body.appendChild(clueInfoEl);
-  }
-  clueInfoEl.style.display = "block";
-
-  // Format clue text — escape first, then highlight keywords
-  let formattedText = escHtml(data.text || "");
-  // Highlight "equip" and items in green/red (safe: regex only matches known words)
-  formattedText = formattedText
-    .replace(/(equip|wear|wield)/gi, '<span style="color:#4CAF50;font-weight:600;">$1</span>')
-    .replace(/(unequip|remove|nothing)/gi, '<span style="color:#EF5350;font-weight:600;">$1</span>')
-    .replace(/(dig|search|talk to|speak to|open|use|dance|wave|clap|bow|cry|laugh|jig|spin|headbang|salute|cheer|beckon|jump|yawn|shrug|blow kiss|panic|raspberry|stomp|flap|slap head)/gi, '<span style="color:#FFA726;font-weight:600;">$1</span>');
-
-  const locName = escHtml(data.locationName || "");
-  clueInfoEl.innerHTML = `
-    <div style="color:#8b5cf6;font-size:14px;font-weight:700;">🗺️ Clue: ${escHtml(data.clueType || "Scroll")}</div>
-    ${locName ? `<div style="color:var(--accent);font-size:13px;margin-top:4px;font-weight:600;">${locName}</div>` : ""}
-    ${formattedText ? `<div style="color:var(--text);font-size:13px;margin-top:6px;line-height:1.5;">${formattedText}</div>` : ""}
-    <div style="color:var(--text-secondary);font-size:11px;margin-top:8px;">(${data.location.x}, ${data.location.y})</div>
-    <button id="clue-goto" style="background:var(--accent-bg);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;margin-top:6px;width:100%;">Go to location</button>
-  `;
-
-  document.getElementById("clue-goto")?.addEventListener("click", () => {
-    map.setView(gameToLatLng(data.location.x, data.location.y), 2, { animate: true });
-  });
-
-  // Place marker with clue scroll icon
-  const loc = data.location;
-  const clueLabel = escHtml(data.clueType || "Clue");
-  const clueFontSize = Math.round(15 * fontScale);
-  const clueIconSize = Math.round(32 * fontScale);
-  clueMarker = L.marker(gameToLatLng(loc.x, loc.y), {
-    icon: L.divIcon({
-      className: "",
-      html: `<div style="text-align:center;">
-        <div style="color:#ffffff;font-size:${clueFontSize}px;font-weight:700;white-space:nowrap;text-shadow:2px 2px 3px #000,0 0 8px #000,-1px -1px 2px #000;margin-bottom:4px;">${clueLabel}</div>
-        <img src="https://oldschool.runescape.wiki/images/Clue_scroll_%28medium%29.png" style="width:${clueIconSize}px;height:${clueIconSize}px;image-rendering:pixelated;filter:drop-shadow(0 0 8px #8b5cf6);" />
-      </div>`,
-      iconSize: [120, 52],
-      iconAnchor: [60, 52],
-    }),
-    zIndexOffset: 900,
-  }).addTo(clueLayer);
-  clueMarker.bindTooltip(`${clueLabel} (${loc.x}, ${loc.y})`, { direction: "top", offset: [0, -10] });
+function updateUnavailablePosition(data) {
+  clearPlayerPosition();
+  updatePlayerInfo({...data, availability: "instanced"});
+  // Always replace from the fresh snapshot, including opt-out and changed steps.
+  objectives.update(data.helpers);
 }
 
-// ── Quest State Tracking ────────────────────────────────
-
-let questStates = {}; // { "Cook's Assistant": "completed", ... }
-let questFilter = localStorage.getItem("runeradar-questfilter") || "all"; // "all", "hide_completed", "hide_not_started"
-
-function handleQuestStates(data) {
-  if (!data.quests) return;
-  questStates = {};
-  for (const q of data.quests) {
-    questStates[q.name] = q.state;
-  }
-  applyQuestStates();
-}
-
-function applyQuestStates() {
-  if (!window._questMarkers) return;
-  for (const marker of window._questMarkers) {
-    const name = marker._questName;
-    const state = questStates[name];
-    // Update tooltip with state
-    if (state) {
-      const stateLabel = state === "completed" ? " ✓" : state === "in_progress" ? " ◆" : "";
-      marker.unbindTooltip();
-      marker.bindTooltip(name + stateLabel, { direction: "top", offset: [0, -8] });
-    }
-    // Update opacity based on filter
-    const el = marker.getElement?.();
-    if (!el) continue;
-    if (questFilter === "hide_completed" && state === "completed") {
-      el.style.opacity = "0.15";
-    } else if (questFilter === "hide_not_started" && state === "not_started") {
-      el.style.opacity = "0.15";
-    } else {
-      el.style.opacity = "";
-    }
-  }
-}
-
-function setQuestFilter(filter) {
-  questFilter = filter;
-  localStorage.setItem("runeradar-questfilter", filter);
-  applyQuestStates();
-}
-
-// ── Data Source: RuneRadar WebSocket ─────────────────────
-
-let ws = null;
-let wsConnected = false;
-
-function connectWebSocket() {
-  try { ws = new WebSocket(`ws://127.0.0.1:${RUNERADAR_WS_PORT}`); } catch { return; }
-
-  ws.onopen = () => {
-    wsConnected = true;
-    setStatus("Connected (RuneRadar)", "connected");
-    setTimeout(() => { if (statusEl.classList.contains("connected")) statusEl.style.opacity = "0.5"; }, 2000);
-  };
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      if (data.type === "position") updatePosition(data.x, data.y, data);
-      else if (data.type === "questHelper") handleQuestHelper(data);
-      else if (data.type === "clueScroll") handleClueScroll(data);
-      else if (data.type === "questStates") handleQuestStates(data);
-      else if (data.type === "logout") handleLogout();
-      else if (data.type === "peer_position" || data.type === "peer_join"
-        || data.type === "peer_leave" || data.type === "peer_list") handlePluginPeerMessage(data);
-      else if (data.type === "socialInfo") {
-        window._localClan = data.clan || null;
-        window._localFc = data.fc || null;
-        if (typeof updateSocialPanel === "function") updateSocialPanel();
-      }
-    } catch {}
-  };
-  ws.onclose = () => { wsConnected = false; ws = null; };
-  ws.onerror = () => {};
-}
-
-// ── Data Source: HTTP Polling ─────────────────────────────
-
-let httpPolling = false;
-let activeHttpPort = null;
-let lastX = 0, lastY = 0;
-
-async function pollHttp() {
-  const ports = activeHttpPort ? [activeHttpPort] : HTTP_PORTS;
-  for (const port of ports) {
-    try {
-      const [eventsRes, statsRes] = await Promise.all([
-        fetch(`http://127.0.0.1:${port}/events`),
-        fetch(`http://127.0.0.1:${port}/stats`).catch(() => null),
-      ]);
-      const events = await eventsRes.json();
-      const stats = statsRes ? await statsRes.json() : null;
-      if (events.worldX && events.worldY) {
-        activeHttpPort = port;
-        if (events.worldX !== lastX || events.worldY !== lastY) {
-          lastX = events.worldX; lastY = events.worldY;
-          updatePosition(events.worldX, events.worldY, {
-            name: stats?.username || "Player", x: events.worldX, y: events.worldY,
-            plane: events.plane || 0, world: null,
-            hitpoints: events.health || events.real_health || "?",
-            prayer: "?", runEnergy: events.run_energy || "?",
-          });
-        }
-        if (!httpPolling) {
-          httpPolling = true;
-          setStatus(`Connected (HTTP :${port})`, "connected");
-          setTimeout(() => { if (statusEl.classList.contains("connected")) statusEl.style.opacity = "0.5"; }, 2000);
-        }
-        return;
-      }
-    } catch {}
-  }
-  if (httpPolling) { httpPolling = false; activeHttpPort = null; }
-}
-
-// ── Connection Manager ──────────────────────────────────
-
-let connectEnabled = localStorage.getItem("runeradar-connect") !== "false";
-
-function setConnectEnabled(enabled) {
-  connectEnabled = enabled;
-  localStorage.setItem("runeradar-connect", enabled);
-  if (!enabled) {
-    // Disconnect and hide status
-    if (ws) { ws.close(); ws = null; }
-    wsConnected = false;
-    httpPolling = false;
-    activeHttpPort = null;
-    statusEl.style.display = "none";
-  } else {
-    statusEl.style.display = "";
-    setStatus("Connecting to RuneLite...", "connecting");
-    connectWebSocket();
-  }
-}
-
-function startConnectionLoop() {
-  if (!connectEnabled) {
-    statusEl.style.display = "none";
-    return;
-  }
-  setStatus("Connecting to RuneLite...", "connecting");
-  connectWebSocket();
-  // HTTP polling only on localhost (avoid spamming from hosted domain)
-  const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:";
-  if (isLocal) {
-    setInterval(() => { if (connectEnabled && !wsConnected) pollHttp(); }, POLL_INTERVAL);
-  }
-  setInterval(() => {
-    if (!connectEnabled) return;
-    if (!wsConnected && (!ws || ws.readyState === WebSocket.CLOSED)) connectWebSocket();
-    if (!wsConnected && !httpPolling) {
-      setStatus("Waiting for RuneLite...", "disconnected");
-      statusEl.style.opacity = "1";
-    }
-  }, RECONNECT_INTERVAL);
-}
-
-function handleLogout() {
+function clearPlayerPosition() {
   if (playerMarker) { map.removeLayer(playerMarker); playerMarker = null; }
   if (playerLabelMarker) { map.removeLayer(playerLabelMarker); playerLabelMarker = null; }
-  questLayer.clearLayers();
-  clueLayer.clearLayers();
-  if (questInfoEl) questInfoEl.style.display = "none";
-  if (clueInfoEl) clueInfoEl.style.display = "none";
+  currentPlayerName = "Your location";
+  nameEl.textContent = "";
+  coordsEl.textContent = "";
+  for (const id of ["p-world", "p-hp", "p-prayer", "p-run"]) document.getElementById(id).textContent = "";
+  document.getElementById("p-stats").hidden = true;
+  playerPlane = null;
   hidePlayerInfo();
-  switchPlane(0);
-  setStatus("Player logged out", "disconnected");
+  if (followPlayer) switchPlane(0);
 }
+
+const connectionMessages = {
+  static: "Open RuneRadar from its RuneLite sidebar to show your location.",
+  pairing: "Connecting to RuneLite on this computer…",
+  connected: "Connected to RuneLite",
+  logged_out: "Connected · Log in to show your location.",
+  loading: "Connected · Waiting for the game to load…",
+  instanced: "Connected · Position unavailable",
+  unavailable: "Connected · Location unavailable here.",
+  stale: "Waiting for a fresh location from RuneLite…",
+  reconnecting: "Connection lost. Reconnecting to RuneLite…",
+  rejected: "Could not connect. Open RuneRadar again in RuneLite; allow local access if asked.",
+  disconnected: "Disconnected. Open RuneRadar in RuneLite to pair again."
+};
+let connectionState = "static";
+function createMapConnection(launch) { return RuneRadarConnection.createConnection({
+  launch,
+  onPosition: data => updatePosition(data.x, data.y, data),
+  onClear: clearPersonalPosition,
+  onUnavailable: updateUnavailablePosition,
+  onState: state => {
+    connectionState = state;
+    setStatus(connectionMessages[state], ["connected", "logged_out", "loading", "instanced", "unavailable"].includes(state)
+      ? "connected" : ["pairing", "reconnecting", "stale"].includes(state) ? "connecting" : "disconnected");
+    const button = document.getElementById("settingsDisconnect");
+    if (button) button.disabled = ["static", "rejected", "disconnected"].includes(state);
+  }
+});
+}
+let connection = createMapConnection(RuneRadarConnection.takeLaunch());
+RuneRadarConnection.onLaunch(launch => {
+  connection.disconnect();
+  connection = createMapConnection(launch);
+  connection.start();
+});
+window.addEventListener("pagehide", () => connection.disconnect());
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) connection.checkFreshness();
+});
 
 // ── URL Hash Navigation ────────────────────────────────
 // Format: #x=3222&y=3218&z=2  (z = zoom level)
@@ -587,11 +416,14 @@ function applyHashParams() {
   const params = readHashParams();
   if (!params) return;
   const zoom = params.z != null ? params.z : 1;
+  map.fire("browsestart");
   map.setView(gameToLatLng(params.x, params.y), zoom);
-  followPlayer = false;
 }
 
 function updateHash() {
+  // Personal movement must never become a saved/shareable map URL, including
+  // a delayed pan event after disconnect. Static map browsing still supports links.
+  if (connectionState !== "static") return;
   const center = map.getCenter();
   // center.lng = x, center.lat = y in our CRS.Simple setup
   const x = Math.round(center.lng);
@@ -617,12 +449,11 @@ window.addEventListener("hashchange", applyHashParams);
 
 document.addEventListener("keydown", (e) => {
   // Don't capture shortcuts when typing in an input field
-  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (e.target.closest("input, textarea, select, button, summary, a, [contenteditable]")) return;
 
   if (e.code === "Space" && playerMarker) {
     e.preventDefault();
-    followPlayer = true;
-    map.setView(playerMarker.getLatLng(), Math.max(map.getZoom(), 1), { animate: true });
+    locatePlayer();
   }
   if (e.key === "F11") {
     e.preventDefault();
@@ -639,31 +470,53 @@ initPathDrawing(map, gameToLatLng);
 
 // ── Minimap ─────────────────────────────────────────────
 
-const minimapTiles = L.tileLayer("", {
-  minZoom: -3, maxZoom: 5, maxNativeZoom: 2, minNativeZoom: 2, tileSize: 256,
-});
-minimapTiles.createTile = function (coords, done) {
-  const tile = document.createElement("img");
-  tile.alt = "";
-  const x = coords.x, y = -(coords.y + 1);
-  const key = "0_" + x;
-  if (tileIndex && (!tileIndex[key] || y < tileIndex[key][0] || y > tileIndex[key][1])) {
-    tile.src = BLANK_TILE;
-    setTimeout(() => done(null, tile), 0);
-    return tile;
+// The overview uses pre-sized tiles, rather than hundreds of detailed images.
+let minimap = null;
+let minimapEnabled = true;
+const minimapViewport = matchMedia("(min-width: 481px)");
+function syncMinimap() {
+  if (!minimapEnabled || !minimapViewport.matches) {
+    if (minimap) {
+      const overviewMap = minimap._miniMap;
+      minimap.remove();
+      // MiniMap 3.6.1 does not destroy its nested map in onRemove.
+      overviewMap.remove();
+      minimap = null;
+    }
+    return;
   }
-  tile.onload = function () { done(null, tile); };
-  tile.onerror = function () { tile.src = BLANK_TILE; done(null, tile); };
-  tile.src = `tiles/2/0_${x}_${y}.png`;
-  return tile;
-};
-const minimap = new L.Control.MiniMap(minimapTiles, {
-  position: "bottomleft",
-  width: 220,
-  height: 220,
-  zoomLevelOffset: -4,
-  toggleDisplay: false,
-}).addTo(map);
+  if (minimap) return;
+  const tiles = L.tileLayer("", {
+    minZoom: -3, maxZoom: 5, minNativeZoom: -2, maxNativeZoom: -2, tileSize: 256,
+  });
+  tiles.createTile = (coords, done) => createIndexedTile(coords, done, true);
+  tiles.on("tileunload tileabort", cancelTile);
+  minimap = new L.Control.MiniMap(tiles, {
+    position: "bottomleft", width: 220, height: 220,
+    zoomLevelOffset: -4, toggleDisplay: false,
+  }).addTo(map);
+  // MiniMap's movement flags assume each programmatic update has finished.
+  // Animated overview pans can finish late and undo a newer search/follow action.
+  const setOverviewView = minimap._miniMap.setView;
+  minimap._miniMap.setView = function (center, zoom, options) {
+    return setOverviewView.call(this, center, zoom, {...options, animate: false});
+  };
+  minimap.getContainer().addEventListener("mousedown", pauseFollowing);
+  minimap.getContainer().addEventListener("touchstart", pauseFollowing, {passive: true});
+}
+minimapViewport.addEventListener("change", syncMinimap);
+
+// Give the local connection and the visible map a chance to paint before POIs.
+const baseMapPainted = new Promise(resolve => {
+  const finish = () => {
+    clearTimeout(fallback);
+    localTileLayer.off("load", finish);
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  };
+  const fallback = setTimeout(finish, 600);
+  localTileLayer.once("load", finish);
+});
+baseMapPainted.then(syncMinimap);
 
 // ── Map Overlays, Layer Control & Settings ───────────────
 
@@ -685,17 +538,10 @@ function styleCheckbox(el) {
   });
 }
 
-loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
+baseMapPainted.then(() => loadMapOverlays(map, gameToLatLng)).then((overlayLayers) => {
   // Add transport layers
   const transportLayers = loadTransportLayers(map, gameToLatLng);
   Object.assign(overlayLayers, transportLayers);
-
-  // Quest, clue, friends layers — with icons for context
-  const _i = (src, label) => `<img src="${src}" style="width:15px;height:15px;vertical-align:middle;image-rendering:pixelated;margin-right:4px;" />${label}`;
-  const W = "https://oldschool.runescape.wiki/images";
-  overlayLayers[_i("icons/1454.png", "Quest Waypoints")] = questLayer;
-  overlayLayers[_i(`${W}/Clue_scroll.png`, "Clue Scroll")] = clueLayer;
-  overlayLayers[_i(`${W}/Friends_List.png`, "Friends")] = peerLayer;
 
   const control = L.control.layers(null, overlayLayers, {
     position: "topright",
@@ -709,14 +555,12 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
   // POI category names (text content after any <img> tags)
   const poiNames = Object.keys(ICON_CATEGORIES);
   const transportNames = ["Fairy Rings", "Spirit Trees", "Teleports"];
-  const pluginNames = ["Quest Waypoints", "Clue Scroll", "Friends"];
   const labelNames = ["Kingdoms", "Town Names"];
 
   const groupDefs = [
     { name: "Labels", match: labelNames, collapsed: false },
     { name: "Points of Interest", match: poiNames, collapsed: false },
     { name: "Transport", match: transportNames, collapsed: false },
-    { name: "Plugin", match: pluginNames, collapsed: false },
   ];
 
   const allLabels = Array.from(layersList.querySelectorAll("label"));
@@ -788,8 +632,12 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
   const settingsDiv = document.createElement("div");
   settingsDiv.className = "settings-section";
   settingsDiv.innerHTML = `
+    <nav class="settings-links" aria-label="Help and policies"><a href="help.html" target="_blank" rel="noopener">Help</a><a href="privacy.html" target="_blank" rel="noopener">Privacy</a><a href="credits.html" target="_blank" rel="noopener">Credits</a></nav>
+    <p id="storage-note" style="font-size:12px;color:var(--text-secondary)" hidden>Browser storage is unavailable. Changes last for this tab only; export drawings to keep them.</p>
     <div class="settings-title">Connection</div>
-    ${makeSettingsCheckbox("settingsConnect", "Connect to RuneLite", connectEnabled)}
+    <p style="font-size:12px;color:var(--text-secondary);margin:8px 0">Open RuneRadar in the RuneLite sidebar to pair this computer.</p>
+    <p class="storage-notice">Clue and quest assistance are optional. Enable each in the RuneRadar plugin settings in RuneLite. <a href="help.html" target="_blank" rel="noopener">Helper support</a></p>
+    <button id="settingsDisconnect" type="button" class="theme-select">Disconnect map</button>
     <div class="settings-title" style="margin-top:8px">Theme</div>
     <div class="settings-row">
       <label>Style</label>
@@ -799,22 +647,16 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
         <option value="game"${currentTheme === "game" ? " selected" : ""}>Old School</option>
       </select>
     </div>
-    <div class="settings-title" style="margin-top:8px">Quest Icons</div>
-    <div class="settings-row">
-      <label>Filter</label>
-      <select id="settingsQuestFilter" class="theme-select">
-        <option value="all"${questFilter === "all" ? " selected" : ""}>Show All</option>
-        <option value="hide_completed"${questFilter === "hide_completed" ? " selected" : ""}>Fade Completed</option>
-        <option value="hide_not_started"${questFilter === "hide_not_started" ? " selected" : ""}>Fade Not Started</option>
-      </select>
-    </div>
+    <div class="settings-title" style="margin-top:8px">Map view</div>
+    ${makeSettingsCheckbox("settingsFloorLayouts", "Show upper-floor layouts", showFloorLayouts)}
+    <p id="floor-layouts-note" class="storage-notice">Off keeps the ground map while you are upstairs. Upper-floor layouts can be sparse. Supported cave and dungeon maps remain available.</p>
     <div class="settings-title" style="margin-top:8px">Player Settings</div>
     <div class="settings-row">
       <label>Color</label>
       <input type="color" id="settingsColor" value="${markerColor}" />
     </div>
-    ${makeSettingsCheckbox("settingsFollow", "Auto-follow player", autoFollow)}
-    ${makeSettingsCheckbox("settingsLabel", "Show name label", showLocationLabel)}
+    ${makeSettingsCheckbox("settingsFollow", "Follow when map opens", autoFollow)}
+    ${makeSettingsCheckbox("settingsLabel", "Show location label", showLocationLabel)}
     <div class="settings-title" style="margin-top:8px">Font Sizes</div>
     <div class="settings-row">
       <label>Scale</label>
@@ -830,9 +672,23 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
     ${makeSettingsCheckbox("settingsZoom", "Zoom controls", true)}
   `;
   layersList.parentNode.appendChild(settingsDiv);
+  const storageNote = document.getElementById("storage-note");
+  storageNote.hidden = MapStorage.persistent;
+  window.addEventListener("map-storage-unavailable", () => { storageNote.hidden = false; });
 
   // Wire up checkboxes
-  const connectCb = document.getElementById("settingsConnect");
+  const floorCb = document.getElementById("settingsFloorLayouts");
+  floorCb.setAttribute("aria-label", "Show upper-floor layouts");
+  floorCb.setAttribute("aria-describedby", "floor-layouts-note");
+  styleCheckbox(floorCb);
+  floorCb.addEventListener("change", event => {
+    showFloorLayouts = event.target.checked;
+    MapStorage.setItem("runeradar-floor-layouts", showFloorLayouts);
+    switchPlane(requestedPlane);
+    syncPlayerFloor();
+    if (playerLabelMarker) playerLabelMarker.setIcon(makePlayerLabel(currentPlayerName));
+    objectives.refreshPlane();
+  });
   const followCb = document.getElementById("settingsFollow");
   const labelCb = document.getElementById("settingsLabel");
   const infoPanelCb = document.getElementById("settingsInfoPanel");
@@ -840,7 +696,6 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
   const searchCb = document.getElementById("settingsSearch");
   const minimapCb = document.getElementById("settingsMinimap");
   const zoomCb = document.getElementById("settingsZoom");
-  styleCheckbox(connectCb);
   styleCheckbox(followCb);
   styleCheckbox(labelCb);
   styleCheckbox(infoPanelCb);
@@ -849,50 +704,43 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
   styleCheckbox(minimapCb);
   styleCheckbox(zoomCb);
 
-  // Connection toggle
-  connectCb.addEventListener("change", (e) => {
-    setConnectEnabled(e.target.checked);
-  });
+  const disconnectButton = document.getElementById("settingsDisconnect");
+  disconnectButton.disabled = ["static", "rejected", "disconnected"].includes(connectionState);
+  disconnectButton.addEventListener("click", () => connection.disconnect());
 
   // Theme selector
   document.getElementById("settingsTheme").addEventListener("change", (e) => {
     applyTheme(e.target.value);
   });
 
-  // Quest filter
-  document.getElementById("settingsQuestFilter").addEventListener("change", (e) => {
-    setQuestFilter(e.target.value);
-  });
-
   // Color picker
   document.getElementById("settingsColor").addEventListener("input", (e) => {
     markerColor = e.target.value;
-    localStorage.setItem("runeradar-color", markerColor);
+    MapStorage.setItem("runeradar-color", markerColor);
     if (playerMarker) playerMarker.setIcon(makePlayerIcon(markerColor));
   });
 
   // Auto-follow toggle
   followCb.addEventListener("change", (e) => {
     autoFollow = e.target.checked;
-    followPlayer = autoFollow;
-    localStorage.setItem("runeradar-follow", autoFollow);
-    if (autoFollow && playerMarker) {
-      map.panTo(playerMarker.getLatLng());
-    }
+    MapStorage.setItem("runeradar-follow", autoFollow);
+    setFollowing(autoFollow);
+    if (autoFollow) locatePlayer();
   });
 
   // Label toggle
   labelCb.addEventListener("change", (e) => {
     showLocationLabel = e.target.checked;
-    localStorage.setItem("runeradar-label", showLocationLabel);
+    MapStorage.setItem("runeradar-label", showLocationLabel);
     if (!showLocationLabel && playerLabelMarker) {
       map.removeLayer(playerLabelMarker);
       playerLabelMarker = null;
     } else if (showLocationLabel && playerMarker && !playerLabelMarker) {
       playerLabelMarker = L.marker(playerMarker.getLatLng(), {
-        icon: makePlayerLabel(currentPlayerName),
+        icon: makePlayerLabel(currentPlayerName), pane: "playerPane",
         interactive: false, zIndexOffset: 999,
-      }).addTo(map);
+      });
+      syncPlayerFloor();
     }
   });
 
@@ -903,7 +751,7 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
     fontSlider.addEventListener("input", (e) => {
       fontScale = parseFloat(e.target.value);
       fontLabel.textContent = fontScale + "x";
-      localStorage.setItem("runeradar-fontscale", fontScale);
+      MapStorage.setItem("runeradar-fontscale", fontScale);
       // Trigger label redraw
       if (typeof window.updateAllLabels === "function") window.updateAllLabels();
     });
@@ -923,8 +771,8 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
     document.getElementById("search-container").style.display = e.target.checked ? "" : "none";
   });
   minimapCb.addEventListener("change", (e) => {
-    const minimapEl = document.querySelector(".leaflet-control-minimap");
-    if (minimapEl) minimapEl.style.display = e.target.checked ? "" : "none";
+    minimapEnabled = e.target.checked;
+    syncMinimap();
   });
   zoomCb.addEventListener("change", (e) => {
     const zoomEl = document.querySelector(".leaflet-control-zoom");
@@ -934,5 +782,4 @@ loadMapOverlays(map, gameToLatLng).then((overlayLayers) => {
 
 // ── Start ───────────────────────────────────────────────
 initSearch(map, gameToLatLng);
-initSocial(map, gameToLatLng);
-startConnectionLoop();
+connection.start();

@@ -1,0 +1,21 @@
+[
+  {
+    "path": "icons/clue/clue-scroll.png",
+    "source": "https://static.runelite.net/cache/item/icon/19835.png",
+    "description": "Jagex clue scroll (master) item sprite, item 19835, used by RuneLite ClueScrollPlugin.getClueScrollImage().",
+    "copyright": "Jagex Limited",
+    "sha256": "84378744e2deec5e328318bef7211ca5ce282f4e257273e551b82c375de42a7f"
+  },
+  {
+    "path": "icons/clue/clue-arrow.png",
+    "source": "https://github.com/runelite/runelite/blob/runelite-parent-1.13.1/runelite-client/src/main/resources/util/clue_arrow.png",
+    "description": "Unmodified util/clue_arrow.png extracted from the RuneLite 1.13.1 client JAR.",
+    "license": "BSD-2-Clause; see LICENSE.txt",
+    "sha256": "16cb0c9824a3d09f299957ac2ba705922d9c82a5e7d6e0ee1a440631945a0394"
+  },
+  {
+    "path": "icons/clue/LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/runelite/runelite/runelite-parent-1.13.1/LICENSE",
+    "sha256": "dd35829a586785621651857262168bd91374a84669592d2db28520648b55a519"
+  }
+]

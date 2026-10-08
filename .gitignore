@@ -1,4 +1,6 @@
 # Gradle
+/.gradle/
+/build/
 runelite-plugin/.gradle/
 runelite-plugin/build/
 runelite-plugin/out/
@@ -25,5 +27,20 @@ webapp/*.jpg
 out/
 
 
-# Node
-relay-server/node_modules/
+# Local workspace files and generated output
+.local/
+artifacts/
+docs/
+relay-server/
+.claude/
+.codex/
+.agents/
+.superpowers/
+.playwright-mcp/
+AGENTS.md
+CLAUDE.md
+OVERHAUL_PROMPT.md
+prompts/
+02-research/
+baseline-*.jpeg
+baseline-*.txt

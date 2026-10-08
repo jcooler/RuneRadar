@@ -1,0 +1,30 @@
+name: Verify MVP
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test and build plugin
+        run: bash ./gradlew test jar --no-daemon -PruneLiteVersion=1.13.1
+      - name: Test local connection and area lookup
+        run: node --test tests/connection.test.cjs tests/map-areas.test.cjs tests/map-storage.test.cjs
+      - name: Check source files
+        run: node scripts/check-source.cjs
+      - name: Verify deployable assets and metadata
+        run: node scripts/check-release.cjs

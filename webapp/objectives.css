@@ -1,0 +1,41 @@
+#objectives { position:absolute; top:76px; left:60px; width:300px; max-width:calc(100% - 72px); max-height:calc(100dvh - 260px); overflow:auto; z-index:700; border-radius:8px; box-shadow:0 6px 22px #0003; scrollbar-width:thin; }
+#objectives[hidden] { display:none; }
+.objective-card { background:var(--bg-panel-solid); color:var(--text); border:1px solid var(--border); border-left:3px solid #dba758; font:13px/1.5 system-ui,sans-serif; }
+.objective-card.quest { border-left-color:#79b8ff; }
+.objective-card + .objective-card { border-top:0; }
+.objective-card summary { cursor:pointer; padding:10px 12px; }
+.objective-kind { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-secondary); }
+.objective-title { display:block; font-size:14px; font-weight:600; padding-left:15px; }
+.objective-body { padding:0 12px 12px; }
+.objective-instruction { white-space:pre-line; overflow-wrap:anywhere; margin:0 0 10px; }
+.objective-note { color:var(--text-secondary); font-size:12px; margin:8px 0; }
+.objective-targets { display:flex; flex-wrap:wrap; gap:6px; }
+.objective-targets button { min-height:40px; background:var(--bg-surface); color:var(--text); border:1px solid var(--border); border-radius:5px; cursor:pointer; padding:6px 10px; font:inherit; overflow-wrap:anywhere; text-align:left; max-width:100%; }
+.objective-targets button:hover { background:var(--bg-hover); border-color:var(--accent); }
+.objective-card :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.objective-marker { display:grid; place-items:center; box-sizing:border-box; background:#392b18; border:2px solid #ffd596; border-radius:9px; box-shadow:0 2px 7px #000b; cursor:pointer; }
+.objective-marker.quest { background:#173b58; border-color:#acd5ff; }
+.objective-marker.approximate { border-style:dashed; border-radius:50%; }
+@media(max-width:1100px) { #objectives { top:116px; max-height:calc(100dvh - 300px); } }
+@media(max-width:360px) { #objectives { top:168px; max-height:calc(100dvh - 352px); } }
+.storage-notice { font-size:12px; line-height:1.5; color:var(--text-secondary); margin:8px 0; }
+.storage-notice a { color:var(--accent); }
+
+.objective-marker.clue { display:block; background:transparent url("icons/clue/clue-arrow.png") no-repeat; border:0; border-radius:0; box-shadow:none; filter:drop-shadow(0 1px 2px #000b); overflow:hidden; }
+.objective-marker.clue img { position:absolute; top:0; left:0; width:36px; height:32px; max-width:none; pointer-events:none; image-rendering:pixelated; }
+.objective-marker.clue.approximate { outline:2px dashed #ffd596; outline-offset:2px; border-radius:4px; }
+.objective-marker svg { width:28px; height:28px; pointer-events:none; }
+.objective-marker:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.objective-progress { color:var(--text-secondary); font-size:12px; margin:0 0 8px; }
+.objective-floor { display:block; color:var(--text-secondary); font-size:11px; line-height:1.5; }
+.objective-tooltip { width:260px; box-sizing:border-box; background:var(--bg-panel-solid); color:var(--text); border-color:var(--border); padding:10px 12px; max-width:min(280px,calc(100vw - 40px)); white-space:normal; }
+.objective-tooltip.leaflet-tooltip-top::before { border-top-color:var(--bg-panel-solid); }
+.objective-context { text-transform:none; font:13px/1.5 system-ui,sans-serif; overflow-wrap:anywhere; white-space:normal; }
+.objective-context strong { display:block; font-size:14px; }
+.objective-context p { white-space:pre-line; margin:5px 0 0; }
+.objective-popup .leaflet-popup-content-wrapper { background:var(--bg-panel-solid); color:var(--text); border:1px solid var(--border); }
+.objective-popup .leaflet-popup-tip { background:var(--bg-panel-solid); }
+.objective-popup .leaflet-popup-content { max-width:calc(100vw - 64px); max-height:240px; overflow:auto; }
+.objective-popup .leaflet-popup-close-button { color:var(--text-secondary); }
+
+.objective-popup.below-marker .leaflet-popup-tip-container { top:-20px; bottom:auto; transform:rotate(180deg); }

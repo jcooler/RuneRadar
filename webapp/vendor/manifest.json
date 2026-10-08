@@ -1,0 +1,74 @@
+[
+  {
+    "path": "vendor/leaflet/LICENSE",
+    "sha256": "53e8dc25862014e4324741ca18fbe3611e11d42ef69f59f86ea8c5389647d4cb"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet.css",
+    "sha256": "a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet-src.esm.js",
+    "sha256": "1aaec968038c165f0637b6d3170f2a51e70abba4370a3b8a41b4a82abd059c7d"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet-src.js",
+    "sha256": "a74cb8cd3a090b8f4111fcfca36aee069312bd483b9f95117b95483c2639ee33"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet.js",
+    "sha256": "db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet-src.esm.js.map",
+    "sha256": "dff001a0f5fdb130d5b33de48c40bc0e75087d8ff8fc464b5c4c966402d9c244"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet-src.js.map",
+    "sha256": "769a57124a057f26c83921499c07e7dbdff4e4a006b6fc6c390ea7ea9534dc86"
+  },
+  {
+    "path": "vendor/leaflet/dist/leaflet.js.map",
+    "sha256": "600a10dc5cd110de0699510d322afcbe01c7ca90b4c5f48adc20314c70aac753"
+  },
+  {
+    "path": "vendor/leaflet/dist/images/layers-2x.png",
+    "sha256": "066daca850d8ffbef007af00b06eac0015728dee279c51f3cb6c716df7c42edf"
+  },
+  {
+    "path": "vendor/leaflet/dist/images/layers.png",
+    "sha256": "1dbbe9d028e292f36fcba8f8b3a28d5e8932754fc2215b9ac69e4cdecf5107c6"
+  },
+  {
+    "path": "vendor/leaflet/dist/images/marker-icon-2x.png",
+    "sha256": "00179c4c1ee830d3a108412ae0d294f55776cfeb085c60129a39aa6fc4ae2528"
+  },
+  {
+    "path": "vendor/leaflet/dist/images/marker-icon.png",
+    "sha256": "574c3a5cca85f4114085b6841596d62f00d7c892c7b03f28cbfa301deb1dc437"
+  },
+  {
+    "path": "vendor/leaflet/dist/images/marker-shadow.png",
+    "sha256": "264f5c640339f042dd729062cfc04c17f8ea0f29882b538e3848ed8f10edb4da"
+  },
+  {
+    "path": "vendor/leaflet-minimap/dist/Control.MiniMap.min.js",
+    "sha256": "1dbfdfd4531a2d5f909fa29261b73dd86c41d9b70aa7bfde7f135e89db84a378"
+  },
+  {
+    "path": "vendor/leaflet-minimap/dist/Control.MiniMap.min.css",
+    "sha256": "a7469be69d05ac5b3d4f3e0e66089f02f20ff917745455046cd62355755e87dc"
+  },
+  {
+    "path": "vendor/leaflet-minimap/dist/images/toggle.png",
+    "sha256": "7528e6cda9672a197059c4e2c3aa85f36b4557ad264190264b9eff5670b35c88"
+  },
+  {
+    "path": "vendor/leaflet-minimap/dist/images/toggle.svg",
+    "sha256": "a98885c370d6b4d8263cfc72336b56e10d3240215d586b4227d46a4fd491ca1b"
+  },
+  {
+    "path": "vendor/leaflet-minimap/LICENSE.txt",
+    "sha256": "198e131ff1ddff5f2688f81ca0f9588db133ff14d107c66fd1b76ce8eeb68d1f"
+  }
+]

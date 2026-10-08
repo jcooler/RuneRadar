@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <script src="connection.js"></script>
   <title>RuneRadar</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css" />
+  <link rel="stylesheet" href="vendor/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="vendor/leaflet-minimap/dist/Control.MiniMap.min.css" />
+  <link rel="stylesheet" href="objectives.css" />
   <style>
     /* ── Theme Variables ─────────────────────────────────── */
     :root, body.theme-dark {
@@ -86,6 +89,7 @@
       font-size: 13px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.3s ease;
       display: flex; align-items: center;
     }
+    #status { max-width: min(460px, 48vw); text-align: center; }
     #status.connected { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
     #status.connected::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-right: 8px; box-shadow: 0 0 6px #4CAF50; animation: dot-pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
     #status.disconnected { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
@@ -159,13 +163,22 @@
     .tool-btn.hidden { display: none; }
 
     #fullscreen-btn { top: 12px; right: 56px; }
-    #locate-btn { top: 12px; right: 100px; }
+    #locate-btn { bottom: 20px; right: 16px; width: 48px; height: 48px; padding: 11px; border-radius: 50%; }
+    #locate-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+    #locate-btn.active svg { fill: currentColor; }
+    #locate-btn span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    #locate-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    #player-info .world { color: var(--text-secondary); font-size: 12px; margin-bottom: 4px; }
+    #player-info .stats[hidden] { display: none; }
     #measure-btn { top: 12px; right: 144px; }
     #pin-btn { top: 12px; right: 188px; }
     #path-btn { top: 12px; right: 232px; }
     #export-btn { top: 12px; right: 276px; }
     #import-btn { top: 12px; right: 312px; }
     #clear-drawings-btn { top: 12px; right: 348px; }
+
+    #drawing-tools { position:fixed; z-index:1000; top:12px; right:144px; display:flex; gap:8px; }
+    #drawing-tools .tool-btn { position:static; flex:none; }
 
     /* Pin modal */
     #pin-modal {
@@ -232,6 +245,8 @@
       text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; white-space: nowrap; text-align: center; pointer-events: none;
     }
 
+    .player-floor { display:block; font-size:11px; line-height:14px; color:#ffe0a8; }
+
     /* Transport icons */
     .transport-icon { text-align: center; font-weight: 700; pointer-events: auto; }
     .fairy-ring span {
@@ -258,109 +273,13 @@
     }
 
     /* Peer markers */
-    .peer-marker {
-      width: 12px; height: 12px; border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.8);
-    }
-    .peer-label span {
-      font-size: 14px; color: #fff; white-space: nowrap;
-      text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; font-weight: 600;
-      text-align: center; display: block;
-    }
 
-    /* Social panel */
-    .social-panel {
-      position: fixed; bottom: 12px; right: 12px; z-index: 1200;
-      background: var(--bg-panel); border: 1px solid var(--border);
-      border-radius: 10px; backdrop-filter: blur(12px);
-      box-shadow: 0 4px 16px var(--shadow); font-family: var(--font);
-      width: 380px; overflow: hidden; transition: all 0.2s;
-    }
-    .social-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 14px; cursor: pointer; user-select: none;
-      font-size: 14px; font-weight: 700; color: var(--text);
-    }
-    .social-header:hover { background: var(--bg-surface); }
-    .social-status {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #666; flex-shrink: 0;
-    }
-    .social-status.connected { background: #4CAF50; box-shadow: 0 0 6px #4CAF50; }
-    .social-status.disconnected { background: #666; }
-    .social-count {
-      margin-left: auto; background: var(--accent-bg); color: #fff;
-      font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 600;
-    }
-    .social-body {
-      max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
-    }
-    .social-body.visible { max-height: 420px; overflow-y: auto; }
-    .social-tabs {
-      display: flex; border-bottom: 1px solid var(--border);
-    }
-    .social-tab {
-      flex: 1; padding: 8px; font-size: 12px; font-weight: 600;
-      background: none; border: none; color: var(--text-muted);
-      cursor: pointer; font-family: var(--font);
-      border-bottom: 2px solid transparent; transition: all 0.15s;
-    }
-    .social-tab:hover { color: var(--text); background: var(--bg-surface); }
-    .social-tab.active {
-      color: var(--accent); border-bottom-color: var(--accent);
-    }
-    .social-tab-content { padding: 0; }
-    .social-clan-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 14px; border-bottom: 1px solid var(--border);
-    }
-    .social-clan-icon { font-size: 16px; }
-    .social-clan-name {
-      font-size: 13px; font-weight: 700; color: var(--accent);
-    }
-    .social-clan-count {
-      margin-left: auto; font-size: 11px; color: var(--text-muted);
-    }
-    .social-toggle-arrow {
-      font-size: 10px; color: var(--text-muted); margin-left: 4px;
-    }
-    .social-group-label {
-      padding: 6px 14px 2px; font-size: 10px; font-weight: 700;
-      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
-      border-top: 1px solid var(--border);
-    }
-    .social-group-label:first-child { border-top: none; }
-    .social-member {
-      padding: 10px 14px 10px 20px; cursor: pointer;
-      border-bottom: 1px solid var(--border-separator, rgba(255,255,255,0.05));
-    }
-    .social-member:last-child { border-bottom: none; }
-    .social-member:hover { background: var(--bg-surface); }
-    .social-member-row {
-      display: flex; align-items: center; gap: 8px;
-    }
-    .social-member-dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-    }
-    .social-member-name { color: var(--text); font-weight: 600; font-size: 13px; }
-    .social-member-info {
-      color: var(--text-muted); font-size: 11px; margin-left: auto;
-      white-space: nowrap;
-    }
-    .social-member-activity {
-      display: block; padding-left: 16px; margin-top: 3px;
-      font-size: 11px; color: var(--accent); font-weight: 500;
-    }
-    .social-member.offline { opacity: 0.5; }
-    .social-member.offline .social-member-name { color: var(--text-muted); }
-    .social-empty {
-      padding: 8px 14px; font-size: 12px; color: var(--text-muted); font-style: italic;
-    }
     /* Layer control */
+    .leaflet-top.leaflet-right { z-index: 1500; }
     .leaflet-control-layers { background: var(--bg-panel) !important; border: 1px solid var(--border) !important;
       border-radius: 8px !important; backdrop-filter: blur(10px); box-shadow: 0 4px 16px var(--shadow) !important;
       color: var(--text) !important; font-family: var(--font); padding: 0 !important; z-index: 1500 !important; }
-    .leaflet-control-layers-expanded { padding: 10px 14px !important; min-width: 210px; max-height: 80vh; overflow-y: auto; z-index: 1500 !important;
+    .leaflet-control-layers-expanded { padding: 10px 14px !important; width: 300px; max-width: calc(100vw - 20px); box-sizing: border-box; min-width: 210px; max-height: 80vh; overflow-y: auto; z-index: 1500 !important;
       scrollbar-width: none; -ms-overflow-style: none; }
     .leaflet-control-layers-expanded::-webkit-scrollbar { display: none; }
     .leaflet-control-layers-toggle { background-color: var(--bg-panel) !important; border: 1px solid var(--border) !important;
@@ -406,6 +325,9 @@
     .settings-row label { color: var(--text-secondary); font-size: 11px; min-width: 50px; }
     .settings-row input[type="color"] { width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 3px; background: none; cursor: pointer; padding: 1px; }
 
+    .settings-links { display:flex; gap:14px; margin:6px 0 12px; font-size:12px; }
+    .settings-links a { color:var(--accent); }
+
     /* Theme selector */
     .theme-select {
       background: var(--bg-surface); color: var(--text); border: 1px solid var(--border);
@@ -427,46 +349,43 @@
     .player-marker { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; animation: pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.85; } }
 
-    /* Game theme — extra OSRS-style accents */
+    /* Game theme - extra OSRS-style accents */
     body.theme-game .fairy-ring span {
       background: rgba(60,45,20,0.9); border-color: #8c7a56; color: #f5deb3;
     }
     body.theme-game .tool-btn.active { background: #b36d0e; }
     body.theme-game .leaflet-control-layers label:hover { color: #ff981f !important; }
 
-    /* ── Mobile / Responsive ── */
+    /* Narrow desktop windows and touch browsing. */
+    @media (max-width: 1100px) {
+      #status { top:auto; bottom:16px; width:calc(100% - 24px); max-width:460px; font-size:12px; }
+      #drawing-tools { top:64px; left:60px; right:auto; gap:4px; flex-wrap:wrap; max-width:calc(100% - 72px); }
+      #drawing-tools .tool-btn { width:44px; height:44px; }
+      #search-container { width:min(320px, calc(100% - 176px)); }
+      #search-input { height:44px; }
+      #fullscreen-btn { top:12px; right:60px; width:44px; height:44px; }
+      #locate-btn { bottom:84px; }
+      #player-info { bottom:80px; font-size:11px; padding:8px 10px; max-width:200px; }
+      #player-info .stats { gap:8px; }
+      #hover-coords { display:none; }
+      #pin-list { top:116px; right:12px; }
+      .leaflet-control-layers-expanded { max-height:60vh; min-width:180px; }
+    }
     @media (max-width: 768px) {
-      #search-container { width: 180px; }
-      #search-input { font-size: 13px; padding: 6px 10px; }
-      #player-info { font-size: 11px; padding: 6px 10px; max-width: 200px; }
-      #player-info .stats { gap: 8px; }
-      .tool-btn { width: 32px; height: 32px; font-size: 16px; }
-      #measure-btn { top: 8px; right: 180px; }
-      #pin-btn { top: 8px; right: 216px; }
-      #path-btn { top: 8px; right: 252px; }
-      #export-btn { top: 8px; right: 288px; }
-      #import-btn { top: 8px; right: 324px; }
-      #clear-drawings-btn { top: 8px; right: 360px; }
-      .social-panel { width: 220px; bottom: 8px; right: 8px; }
-      .social-body.visible { max-height: 300px; }
-      .leaflet-control-minimap { width: 140px !important; height: 140px !important; }
-      #locate-btn { width: 32px; height: 32px; font-size: 16px; }
-      #fullscreen-btn { width: 32px; height: 32px; font-size: 16px; }
-      .leaflet-control-layers-expanded { max-height: 60vh; min-width: 180px; }
-      #quest-info, #clue-info { max-width: 260px; font-size: 12px; }
+      #search-input { font-size:13px; padding:6px 10px; }
+      .leaflet-control-minimap { width:140px !important; height:140px !important; }
     }
     @media (max-width: 480px) {
-      #search-container { width: 140px; }
-      .tool-btn { width: 28px; height: 28px; font-size: 14px; }
-      #player-info { display: none; }
-      .social-panel { width: 180px; }
-      .leaflet-control-minimap { display: none !important; }
-      #quest-info, #clue-info { max-width: 200px; }
+      .leaflet-control-minimap { display:none !important; }
+    }
+    @media (max-width: 360px) {
+      #drawing-tools { max-width:144px; }
+      #pin-list { top:164px; }
     }
   </style>
 </head>
 <body>
-  <div id="status" class="connecting">Connecting to RuneLite...</div>
+  <div id="status" class="disconnected" role="status" aria-live="polite">Open RuneRadar from its RuneLite sidebar to show your location.</div>
 
   <div id="search-container">
     <div style="position:relative">
@@ -479,25 +398,31 @@
   </div>
 
   <div id="player-info" class="hidden">
-    <div class="name" id="p-name">—</div>
-    <div class="coords" id="p-coords">—</div>
-    <div class="stats">
-      <span class="stat stat-hp"><img src="https://oldschool.runescape.wiki/images/Hitpoints_icon_%28detail%29.png" alt="HP"> <span id="p-hp">0</span></span>
-      <span class="stat stat-pray"><img src="https://oldschool.runescape.wiki/images/Prayer_icon_%28detail%29.png" alt="Prayer"> <span id="p-pray">0</span></span>
-      <span class="stat stat-run"><img src="https://oldschool.runescape.wiki/images/Agility_icon_%28detail%29.png" alt="Run"> <span id="p-run">0</span>%</span>
+    <div class="name" id="p-name">-</div>
+    <div class="world" id="p-world"></div>
+    <div class="coords" id="p-coords">-</div>
+    <div class="stats" id="p-stats" hidden>
+      <span class="stat stat-hp" id="p-hp"></span>
+      <span class="stat stat-pray" id="p-prayer"></span>
+      <span class="stat stat-run" id="p-run"></span>
     </div>
   </div>
+
+  <section id="objectives" aria-label="Current objectives" hidden></section>
 
   <div id="hover-coords"></div>
 
   <button class="tool-btn" id="fullscreen-btn" title="Toggle fullscreen (F11)">⛶</button>
-  <button class="tool-btn" id="locate-btn" title="Go to player (Space)">⌖</button>
+  <button class="tool-btn hidden" id="locate-btn" type="button" title="Follow my location (Space)" aria-label="Follow my location" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 14 21 10.5 13.5 3 10Z" /></svg><span>Follow my location</span></button>
+  <div id="drawing-tools" role="toolbar" aria-label="Map drawing tools">
   <button class="tool-btn" id="measure-btn" title="Measure distance">📏</button>
   <button class="tool-btn" id="pin-btn" title="Drop a pin">📌</button>
   <button class="tool-btn" id="path-btn" title="Draw path">✏️</button>
   <button class="tool-btn" id="export-btn" title="Export pins &amp; paths" onclick="exportPinsAndPaths()">💾</button>
   <button class="tool-btn" id="import-btn" title="Import pins &amp; paths" onclick="importPinsAndPaths()">📂</button>
   <button class="tool-btn" id="clear-drawings-btn" title="Clear all pins &amp; paths">🗑️</button>
+
+  </div>
 
   <div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:1999;background:rgba(0,0,0,0.4)"></div>
 
@@ -525,15 +450,16 @@
 
   <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+  <script src="vendor/leaflet/dist/leaflet.js"></script>
+  <script src="vendor/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+  <script src="map-storage.js"></script>
   <script src="transport-data.js"></script>
   <script src="poi-names.js"></script>
   <script src="new-area-pois.js"></script>
   <script src="map-icons.js"></script>
   <script src="tools.js"></script>
-  <script src="crypto.js"></script>
-  <script src="social.js"></script>
+  <script src="map-areas.js"></script>
+  <script src="objectives.js"></script>
   <script src="runeradar.js"></script>
 </body>
 </html>

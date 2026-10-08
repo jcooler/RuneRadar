@@ -1,57 +1,84 @@
 # RuneRadar
 
-A live OSRS world map companion for your second monitor. Install the RuneLite plugin, open the web app, and see your player position, quests, clue scrolls, and friends on a full interactive map.
+A personal Old School RuneScape map for your browser, connected to RuneLite on
+the same computer. RuneRadar is in development and is not yet available from
+the Plugin Hub.
 
 ## Features
 
-- **Live player tracking** - position updates in real-time as you move in-game
-- **4,000+ POI icons** - banks, quests, dungeons, fishing spots, mining sites, shops, and more from the game cache
-- **270+ location labels** - towns, cities, kingdoms, sailing islands, all wiki-verified
-- **Quest Helper integration** - quest waypoints and step text shown on the map
-- **Clue Scroll integration** - clue target locations with go-to button
-- **Transport networks** - fairy rings with codes, spirit trees, teleports, balloons, canoes, gliders, minecarts
-- **Social features** - share your location with friends, clan, and FC members via encrypted relay
-- **Map tools** - search, distance measurement, custom pins, path drawing, coordinate copy
-- **Themes** - dark, light, and Old School
-- **Export/import** - save and share your pins and paths
-- **URL sharing** - link directly to any map location
+- Live player location with a close initial view.
+- Ground-map context while upstairs, with an Upstairs marker label and optional
+  upper-floor layouts in map settings. Supported caves and dungeons retain
+  their own map locations.
+- Account name, world, nearby area, HP, prayer and run energy.
+- Search, map layers, transport locations and named raid entrances.
+- Free browsing while the player marker keeps updating. Use the navigation
+  arrow or Space to return to your location and resume following.
+- Optional clue instructions and supported target markers from RuneLite's
+  Clue Scroll plugin, with RuneLite clue icons and destination details on hover
+  or tap. Upstairs clues mark the building on the ground map. Clue assistance
+  starts off.
+- Local pins, paths, distance measurement, import and export.
+- Dark, light and Old School themes.
 
-## Getting Started
+## Run locally
 
-1. Install the **RuneRadar** plugin in RuneLite
-2. Open the web app in your browser
-3. Log into OSRS - the map connects automatically
+Requirements: Java 11, Python 3, and Node 18 or newer for verification.
 
-The plugin runs a local WebSocket server on port 37780. The web app connects to it and displays your live position.
+1. Serve the map from the repository root:
+   `python -m http.server 8000 --bind 127.0.0.1 --directory webapp`.
+2. Start the development client: `./gradlew.bat run` on Windows or
+   `./gradlew run` on macOS/Linux.
+3. Enable RuneRadar and **Use local development map** in its RuneLite settings.
+4. Click **Open RuneRadar** in its sidebar. Allow local-network access if your
+   browser requests it, then log into the game.
+5. For clue assistance, enable RuneLite's **Clue Scroll** plugin and RuneRadar's
+   **Show clue assistance** setting, then read a clue in game.
 
-## Social Features
+Search or move the map to browse freely. Click the navigation arrow to follow
+again. After refreshing the browser, use **Open RuneRadar** to reconnect.
+For multiple clients, choose a different local connection port for each.
 
-Share your location with friends who also have the plugin:
+The regular plugin setting opens [runeradar.app](https://runeradar.app).
+Local changes do not update that website. The map is static and can be hosted
+on GitHub Pages; live player data does not require a hosted relay.
 
-1. Enable **Social Features** in the plugin settings
-2. Choose who to share with - Friends List, Clan, or Friends Chat
-3. Friends with the plugin see each other on the map automatically
+## Current limitations
 
-No room codes or setup needed, if you're on each other's friends list in-game and both have sharing enabled, you see each other. All position data is end-to-end encrypted.
+- Browser and RuneLite must run on the same computer.
+- Player location is hidden in instanced areas, including player-owned houses.
+  Account details and enabled helper destinations keep updating there.
+- Clue coverage still needs in-game validation. Some clues provide instructions
+  without a map target; equipment, combat and puzzle overlays stay in RuneLite.
+- Quest step sharing is experimental and does not work with the current
+  Plugin Hub version of Quest Helper.
 
 ## Privacy
 
-- **Opt-in only** - social features are off by default
-- **Privacy modes** - share exact location, region only, world only, or appear hidden
-- **E2E encrypted** - the relay server cannot read your coordinates
-- **No persistence** - nothing is stored to disk, positions cleared on disconnect
+Opening the map pairs a browser tab using a one-use link that expires after
+one minute. The plugin sends your own location and account details directly to
+that tab over a local connection. Clue details are sent only when enabled.
+Disconnecting, replacing the pairing, or disabling the plugin revokes access.
+Live game data and pairing credentials are not saved in browser storage.
 
-## Keyboard Shortcuts
+The static website host receives normal asset requests, including tiles that
+can indicate the area being viewed. See [Privacy](webapp/privacy.html) and
+[Help](webapp/help.html) for connection and storage details.
 
-| Key | Action |
-|-----|--------|
-| Space | Snap to player |
-| F11 | Toggle fullscreen |
-| Escape | Cancel active tool |
-| Right-click | Copy coordinates |
+## Verification
 
+```text
+./gradlew.bat test jar --no-daemon -PruneLiteVersion=1.13.1
+node --test tests/connection.test.cjs tests/map-areas.test.cjs tests/map-storage.test.cjs
+node scripts/check-source.cjs
+node scripts/check-release.cjs
+```
 
+Use `./gradlew` outside Windows. Plugin code is in `src/main`; automated tests
+are in `src/test` and `tests`. The nested `runelite-plugin` launcher uses the
+same source files.
 
 ## License
 
-MIT
+Original code is licensed under [BSD 2-Clause](LICENSE). Third-party libraries,
+data and game artwork retain their own rights. See [NOTICE.md](NOTICE.md).

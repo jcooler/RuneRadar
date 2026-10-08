@@ -1,5 +1,5 @@
 /**
- * RuneRadar — Supplemental POIs
+ * RuneRadar - Supplemental POIs
  * POIs not covered by cache-icons.json (game cache extract).
  * Includes: agility courses, altars, transportation/ships, and select mining/fishing.
  * Auto-filtered to remove duplicates with cache data.
@@ -153,47 +153,47 @@ const NEW_AREA_POIS = [
   { x: 2927, y: 4056, icon: "transportation", name: "Grimstone" },
 
   // ── Balloon Transport (wiki-verified) ──
-  { x: 2922, y: 3301, icon: "transportation", name: "Balloon — Crafting Guild" },
-  { x: 2937, y: 3422, icon: "transportation", name: "Balloon — Taverley" },
-  { x: 2810, y: 3356, icon: "transportation", name: "Balloon — Entrana" },
-  { x: 3299, y: 3480, icon: "transportation", name: "Balloon — Varrock" },
-  { x: 2459, y: 3108, icon: "transportation", name: "Balloon — Castle Wars" },
-  { x: 2479, y: 3459, icon: "transportation", name: "Balloon — Grand Tree" },
+  { x: 2922, y: 3301, icon: "transportation", name: "Balloon - Crafting Guild" },
+  { x: 2937, y: 3422, icon: "transportation", name: "Balloon - Taverley" },
+  { x: 2810, y: 3356, icon: "transportation", name: "Balloon - Entrana" },
+  { x: 3299, y: 3480, icon: "transportation", name: "Balloon - Varrock" },
+  { x: 2459, y: 3108, icon: "transportation", name: "Balloon - Castle Wars" },
+  { x: 2479, y: 3459, icon: "transportation", name: "Balloon - Grand Tree" },
 
-  // ── Canoe Stations — River Lum (wiki-verified) ──
-  { x: 3241, y: 3235, icon: "transportation", name: "Canoe — Lumbridge" },
-  { x: 3200, y: 3341, icon: "transportation", name: "Canoe — Champions' Guild" },
-  { x: 3110, y: 3409, icon: "transportation", name: "Canoe — Barbarian Village" },
-  { x: 3130, y: 3508, icon: "transportation", name: "Canoe — Edgeville" },
-  { x: 3155, y: 3628, icon: "transportation", name: "Canoe — Ferox Enclave" },
+  // ── Canoe Stations - River Lum (wiki-verified) ──
+  { x: 3241, y: 3235, icon: "transportation", name: "Canoe - Lumbridge" },
+  { x: 3200, y: 3341, icon: "transportation", name: "Canoe - Champions' Guild" },
+  { x: 3110, y: 3409, icon: "transportation", name: "Canoe - Barbarian Village" },
+  { x: 3130, y: 3508, icon: "transportation", name: "Canoe - Edgeville" },
+  { x: 3155, y: 3628, icon: "transportation", name: "Canoe - Ferox Enclave" },
 
-  // ── Canoe Stations — River Dougne (wiki-verified) ──
-  { x: 2441, y: 3134, icon: "transportation", name: "Canoe — Castle Wars" },
-  { x: 2484, y: 3190, icon: "transportation", name: "Canoe — Tree Gnome Village" },
-  { x: 2579, y: 3259, icon: "transportation", name: "Canoe — The Clocktower" },
-  { x: 2573, y: 3359, icon: "transportation", name: "Canoe — Chaos Druid Tower" },
-  { x: 2525, y: 3409, icon: "transportation", name: "Canoe — Tree Gnome Stronghold" },
+  // ── Canoe Stations - River Dougne (wiki-verified) ──
+  { x: 2441, y: 3134, icon: "transportation", name: "Canoe - Castle Wars" },
+  { x: 2484, y: 3190, icon: "transportation", name: "Canoe - Tree Gnome Village" },
+  { x: 2579, y: 3259, icon: "transportation", name: "Canoe - The Clocktower" },
+  { x: 2573, y: 3359, icon: "transportation", name: "Canoe - Chaos Druid Tower" },
+  { x: 2525, y: 3409, icon: "transportation", name: "Canoe - Tree Gnome Stronghold" },
 
   // ── Gnome Glider stations (wiki-verified) ──
-  { x: 2466, y: 3496, icon: "transportation", name: "Gnome Glider — Grand Tree" },
-  { x: 2849, y: 3499, icon: "transportation", name: "Gnome Glider — White Wolf Mountain" },
-  { x: 3325, y: 3429, icon: "transportation", name: "Gnome Glider — Digsite" },
-  { x: 3282, y: 3212, icon: "transportation", name: "Gnome Glider — Al Kharid" },
-  { x: 2541, y: 2971, icon: "transportation", name: "Gnome Glider — Feldip Hills" },
-  { x: 2714, y: 2803, icon: "transportation", name: "Gnome Glider — Ape Atoll" },
-  { x: 2972, y: 2965, icon: "transportation", name: "Gnome Glider — Karamja" },
+  { x: 2466, y: 3496, icon: "transportation", name: "Gnome Glider - Grand Tree" },
+  { x: 2849, y: 3499, icon: "transportation", name: "Gnome Glider - White Wolf Mountain" },
+  { x: 3325, y: 3429, icon: "transportation", name: "Gnome Glider - Digsite" },
+  { x: 3282, y: 3212, icon: "transportation", name: "Gnome Glider - Al Kharid" },
+  { x: 2541, y: 2971, icon: "transportation", name: "Gnome Glider - Feldip Hills" },
+  { x: 2714, y: 2803, icon: "transportation", name: "Gnome Glider - Ape Atoll" },
+  { x: 2972, y: 2965, icon: "transportation", name: "Gnome Glider - Karamja" },
 
   // ── Lovakengj Minecart Network (wiki-verified, replacing old entries) ──
-  { x: 1669, y: 3833, icon: "transportation", name: "Minecart — Arceuus" },
-  { x: 1218, y: 3738, icon: "transportation", name: "Minecart — Farming Guild" },
-  { x: 1808, y: 3480, icon: "transportation", name: "Minecart — Tithe Farm" },
-  { x: 1657, y: 3542, icon: "transportation", name: "Minecart — Hosidius West" },
-  { x: 1698, y: 3660, icon: "transportation", name: "Minecart — Kingstown" },
-  { x: 1571, y: 3466, icon: "transportation", name: "Minecart — Kourend Woodland" },
-  { x: 1518, y: 3732, icon: "transportation", name: "Minecart — Lovakengj" },
-  { x: 1255, y: 3548, icon: "transportation", name: "Minecart — Mount Quidamortem" },
-  { x: 1648, y: 3930, icon: "transportation", name: "Minecart — Wintertodt" },
-  { x: 1761, y: 3709, icon: "transportation", name: "Minecart — Port Piscarilius" },
-  { x: 1591, y: 3620, icon: "transportation", name: "Minecart — Shayzien East" },
-  { x: 1414, y: 3577, icon: "transportation", name: "Minecart — Shayzien West" },
+  { x: 1669, y: 3833, icon: "transportation", name: "Minecart - Arceuus" },
+  { x: 1218, y: 3738, icon: "transportation", name: "Minecart - Farming Guild" },
+  { x: 1808, y: 3480, icon: "transportation", name: "Minecart - Tithe Farm" },
+  { x: 1657, y: 3542, icon: "transportation", name: "Minecart - Hosidius West" },
+  { x: 1698, y: 3660, icon: "transportation", name: "Minecart - Kingstown" },
+  { x: 1571, y: 3466, icon: "transportation", name: "Minecart - Kourend Woodland" },
+  { x: 1518, y: 3732, icon: "transportation", name: "Minecart - Lovakengj" },
+  { x: 1255, y: 3548, icon: "transportation", name: "Minecart - Mount Quidamortem" },
+  { x: 1648, y: 3930, icon: "transportation", name: "Minecart - Wintertodt" },
+  { x: 1761, y: 3709, icon: "transportation", name: "Minecart - Port Piscarilius" },
+  { x: 1591, y: 3620, icon: "transportation", name: "Minecart - Shayzien East" },
+  { x: 1414, y: 3577, icon: "transportation", name: "Minecart - Shayzien West" },
 ];

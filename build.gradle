@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.runeradar'
+version = '1.0.0'
+
+def runeLiteVersion = findProperty('runeLiteVersion') ?: 'latest.release'
+def pluginMainClass = 'com.runeradar.RuneRadarPluginTest'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://repo.runelite.net'
+        content { includeGroupByRegex('net\\.runelite.*') }
+    }
+}
+
+dependencies {
+    compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    implementation('org.java-websocket:Java-WebSocket:1.5.7') {
+        exclude group: 'org.slf4j'
+    }
+
+    testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+    testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
+    testImplementation 'org.slf4j:slf4j-api:1.7.36'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.release.set(11)
+}
+
+tasks.register('run', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = pluginMainClass
+
+    jvmArgs '-ea'
+    args '--developer-mode', '--debug'
+}
+
+
+// Test-only synthetic position source for browser QA; excluded from the plugin jar.
+tasks.register('browserFixture', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.runeradar.PersonalMapFixture'
+    standardInput = System.in
+    args findProperty('fixtureLink') ?: '.local/qa/fixture-link.txt'
+}

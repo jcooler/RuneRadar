@@ -1,0 +1,5 @@
+# Preserve upstream browser packages byte-for-byte, including their hashes.
+webapp/vendor/** -text -whitespace
+gradlew text eol=lf
+runelite-plugin/gradlew text eol=lf
+webapp/icons/clue/LICENSE.txt -text -whitespace
