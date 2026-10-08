@@ -31,9 +31,9 @@ async (page) => {
       assert(await p.locator('.objective-marker').count()===2,'helper markers disappeared');
       assert(await p.evaluate(()=>!playerMarker&&!playerLabelMarker&&playerPlane===null),'old player position remained');
       assert(await p.evaluate(center=>map.getCenter().equals(center),center),'instance moved the map');
-      assert(await p.locator('#status').innerText()==='Connected · Player position hidden','instance status unclear');
+      assert(await p.locator('#status').innerText()==='Connected · Position unavailable','instance status unclear');
       assert(await p.locator('#p-world').innerText()==='W613 · Instanced area','stale outside region shown');
-      assert(await p.locator('#p-coords').innerText()==='Player position hidden','stale coordinates shown');
+      assert(await p.locator('#p-coords').innerText()==='Position unavailable','stale coordinates shown');
       assert(await p.locator('#p-name').innerText()==='Map preview','account details missing');
       assert(await p.locator('#locate-btn').isHidden(),'locate action offered without a position');
     });

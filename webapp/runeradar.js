@@ -276,7 +276,7 @@ function updatePlayerInfo(data) {
   document.getElementById("p-run").textContent = account ? `Run ${account.runEnergy}%` : "";
   document.getElementById("p-stats").hidden = !account;
   const floor = FLOOR_NAMES[data.plane] || `Floor ${data.plane}`;
-  coordsEl.textContent = instanced ? "Player position hidden" : `(${data.x}, ${data.y}) ${floor}`;
+  coordsEl.textContent = instanced ? "Position unavailable" : `(${data.x}, ${data.y}) ${floor}`;
 }
 
 function hidePlayerInfo() {
@@ -363,7 +363,7 @@ const connectionMessages = {
   connected: "Connected to RuneLite",
   logged_out: "Connected · Log in to show your location.",
   loading: "Connected · Waiting for the game to load…",
-  instanced: "Connected · Player position hidden",
+  instanced: "Connected · Position unavailable",
   unavailable: "Connected · Location unavailable here.",
   stale: "Waiting for a fresh location from RuneLite…",
   reconnecting: "Connection lost. Reconnecting to RuneLite…",
