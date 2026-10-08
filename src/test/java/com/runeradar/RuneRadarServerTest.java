@@ -86,6 +86,67 @@ public class RuneRadarServerTest
         assertFalse(logout.has("position"));
         peer.socket.abort();
     }
+    @Test public void pluginCapturesFreshQuestAndAccountInInstancesWithoutCoordinates() throws Exception
+    {
+        Peer peer = connect("https://runeradar.app");
+        peer.send("pair", server.issuePairingToken()); peer.next(); peer.next();
+        boolean[] instanced = {true}, enabled = {true};
+        net.runelite.api.GameState[] state = {net.runelite.api.GameState.LOGGED_IN};
+        net.runelite.api.Player player = (net.runelite.api.Player) java.lang.reflect.Proxy.newProxyInstance(
+            getClass().getClassLoader(), new Class<?>[]{net.runelite.api.Player.class}, (proxy, method, args) -> {
+                if (method.getName().equals("getName")) return "Test Player";
+                if (method.getName().equals("getWorldLocation")) {
+                    assertFalse("Never read instance coordinates as a world-map position", instanced[0]);
+                    return new net.runelite.api.coords.WorldPoint(3016, 3232, 0);
+                }
+                throw new AssertionError("Unexpected player call: " + method.getName());
+            });
+        net.runelite.api.Client client = (net.runelite.api.Client) java.lang.reflect.Proxy.newProxyInstance(
+            getClass().getClassLoader(), new Class<?>[]{net.runelite.api.Client.class}, (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "getLocalPlayer": return player;
+                    case "getGameState": return state[0];
+                    case "isInInstancedRegion": return instanced[0];
+                    case "getWorld": return 613;
+                    case "getBoostedSkillLevel": return 99;
+                    case "getEnergy": return 8500;
+                    default: throw new AssertionError("Unexpected client call: " + method.getName());
+                }
+            });
+        RuneRadarPlugin plugin = new RuneRadarPlugin();
+        net.runelite.client.eventbus.EventBus bus = new net.runelite.client.eventbus.EventBus(error -> { throw new AssertionError(error); });
+        RuneRadarConfig config = new RuneRadarConfig() { @Override public boolean showQuests() { return enabled[0]; } };
+        for (java.util.Map.Entry<String,Object> field : java.util.Map.<String,Object>of(
+            "client", client, "config", config, "server", server, "eventBus", bus, "active", true).entrySet()) {
+            java.lang.reflect.Field member = RuneRadarPlugin.class.getDeclaredField(field.getKey());
+            member.setAccessible(true); member.set(plugin, field.getValue());
+        }
+        java.util.concurrent.atomic.AtomicInteger requests = new java.util.concurrent.atomic.AtomicInteger();
+        bus.register(net.runelite.client.events.PluginMessage.class, request -> {
+            java.util.Map<String,Object> reply = new java.util.HashMap<>(request.getData());
+            reply.put("state", "active"); reply.put("title", "Quest " + requests.incrementAndGet());
+            reply.put("text", "Speak to the guide."); reply.put("target", new net.runelite.api.coords.WorldPoint(3013, 3209, 0));
+            plugin.onPluginMessage(new net.runelite.client.events.PluginMessage("questhelper", "stepSnapshot", reply));
+        }, 0);
+        plugin.onGameTick(new net.runelite.api.events.GameTick());
+        JsonObject first = peer.next();
+        assertEquals("instanced", first.get("availability").getAsString());
+        assertFalse(first.has("position"));
+        assertTrue("Instance capture must keep the current quest step", first.has("helpers"));
+        assertEquals("Quest 1", first.getAsJsonObject("helpers").getAsJsonObject("quest").get("title").getAsString());
+        assertEquals("Test Player", first.getAsJsonObject("account").get("name").getAsString());
+        plugin.onGameTick(new net.runelite.api.events.GameTick());
+        assertEquals("Quest 2", peer.next().getAsJsonObject("helpers").getAsJsonObject("quest").get("title").getAsString());
+        enabled[0] = false; plugin.onGameTick(new net.runelite.api.events.GameTick());
+        assertFalse(peer.next().getAsJsonObject("helpers").has("quest")); assertEquals(2, requests.get());
+        instanced[0] = false; plugin.onGameTick(new net.runelite.api.events.GameTick());
+        assertEquals(3016, peer.next().getAsJsonObject("position").get("x").getAsInt());
+        state[0] = net.runelite.api.GameState.LOGIN_SCREEN; plugin.onGameTick(new net.runelite.api.events.GameTick());
+        JsonObject logout = peer.next();
+        assertFalse(logout.has("account")); assertFalse(logout.has("helpers")); assertFalse(logout.has("position"));
+        peer.socket.abort();
+    }
+
     @Test public void rejectsMissingNullAndLookalikeOrigins() throws Exception
     {
         for (String origin : new String[]{null, "null", "https://runeradar.app.evil.test", "https://runeradar.app:444", "http://localhost:8000"})

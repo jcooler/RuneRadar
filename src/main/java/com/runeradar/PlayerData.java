@@ -33,6 +33,11 @@ final class PlayerData
         return new PlayerData("available", new Position(x, y, plane), account, helpers);
     }
 
+    static PlayerData instanced(Account account, HelperData.Snapshot helpers)
+    {
+        return new PlayerData("instanced", null, account, helpers);
+    }
+
     static PlayerData unavailable(String reason) { return new PlayerData(reason, null, null, null); }
 
     PlayerData withoutHelper(String helper)

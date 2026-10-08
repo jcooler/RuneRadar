@@ -35,7 +35,7 @@
   }
 
   function createConnection(options) {
-    const {WebSocketClass = WebSocket, onState, onPosition, onClear,
+    const {WebSocketClass = WebSocket, onState, onPosition, onClear, onUnavailable = onClear,
       now = () => performance.now(), setTimer = setTimeout, clearTimer = clearTimeout} = options;
     let launch = options.launch;
     const port = launch?.port;
@@ -92,6 +92,9 @@
           if (data.sequence <= lastSequence) return;
           lastSequence = data.sequence;
           if (data.availability === "available") { onPosition({...data.position, account: data.account, helpers: data.helpers}); onState("connected"); }
+          else if (data.availability === "instanced") {
+            onUnavailable({account: data.account, helpers: data.helpers}); onState("instanced");
+          }
           else { onClear(); onState(data.availability); }
         } catch { stop("rejected"); }
       };
@@ -148,11 +151,12 @@
     if (typeof data.session !== "string" || !/^[a-zA-Z0-9-]{1,64}$/.test(data.session) ||
         !Number.isSafeInteger(data.sequence) || data.sequence < 0 ||
         !Number.isSafeInteger(data.timestamp) || data.timestamp < 0 || !AVAILABILITY.has(data.availability)) return false;
-    if (data.availability !== "available") return data.position == null && data.account == null && data.helpers == null;
+    if (data.availability !== "available" && data.availability !== "instanced")
+      return data.position == null && data.account == null && data.helpers == null;
     if (data.account != null && !validAccount(data.account)) return false;
     if (data.helpers != null && (typeof data.helpers !== "object" || Array.isArray(data.helpers) ||
         !validHelper(data.helpers.clue) || !validHelper(data.helpers.quest))) return false;
-    return validPoint(data.position);
+    return data.availability === "instanced" ? data.position == null : validPoint(data.position);
   }
   return {consumeLaunch, createConnection};
 });

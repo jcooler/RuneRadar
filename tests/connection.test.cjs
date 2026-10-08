@@ -5,7 +5,7 @@ const token = 'a'.repeat(43);
 const resume = 'b'.repeat(43);
 
 function fixture(launch = {credential: token, port: 37780}) {
-  const sockets = [], positions = [], states = [], timers = new Map();
+  const sockets = [], positions = [], unavailable = [], states = [], timers = new Map();
   let clears = 0, time = 0, id = 0;
   class Socket {
     constructor(url) { this.url = url; this.readyState = 0; this.sent = []; sockets.push(this); }
@@ -18,8 +18,8 @@ function fixture(launch = {credential: token, port: 37780}) {
   const connection = createConnection({launch, WebSocketClass: Socket, now: () => time,
     setTimer: (fn, delay) => { timers.set(++id, {fn, at: time + delay}); return id; },
     clearTimer: id => timers.delete(id),
-    onState: state => states.push(state), onPosition: value => positions.push(value), onClear: () => clears++});
-  return {connection, sockets, positions, states, timers, get clears() { return clears; },
+    onUnavailable: value => unavailable.push(value), onState: state => states.push(state), onPosition: value => positions.push(value), onClear: () => clears++});
+  return {connection, sockets, positions, unavailable, states, timers, get clears() { return clears; },
     advance(ms) { time += ms; for (const [id, timer] of [...timers]) if(timer.at <= time) { timers.delete(id); timer.fn(); } }};
 }
 const accepted = {version: 1, type: 'authenticated', credential: resume};
@@ -58,7 +58,7 @@ test('fresh snapshots render; old sequences and invalid coordinates cannot leave
   socket.message(snapshot(3, {position: {x: -1, y: 0, plane: 0}}));
   assert.equal(f.positions.length, 1); assert.equal(f.states.at(-1), 'rejected'); assert.ok(f.clears > 0);
 });
-test('logout and unavailable instances clear; fresh account sessions render', () => {
+test('logout clears data; fresh accounts and empty instance snapshots remain connected', () => {
   const f = fixture(); f.connection.start(); const s = f.sockets[0]; s.open(); s.message(accepted); s.message(snapshot());
   const before = f.clears;
   s.message(snapshot(2, {session: 'logout-session', availability: 'logged_out', position: undefined}));
@@ -166,10 +166,48 @@ test('invalid or excessive helper payloads cannot retain prior objectives', () =
     assert.equal(f.positions.length,1); assert.equal(f.states.at(-1),'rejected');assert.ok(f.clears>0);
   }
 });
-test('unavailable snapshots must not carry helper details', () => {
+test('instanced snapshots deliver fresh helpers and account details without player coordinates', () => {
   const f=fixture();f.connection.start();const s=f.sockets[0];s.open();s.message(accepted);
-  s.message(snapshot(1,{availability:'instanced',position:undefined,helpers:{clue:objective()}}));
-  assert.equal(f.states.at(-1),'rejected');assert.equal(f.positions.length,0);
+  const account={name:'Test',world:613,hitpoints:99,prayer:70,runEnergy:85};
+  s.message(snapshot(1,{helpers:{clue:objective()}}));
+  s.message(snapshot(2,{availability:'instanced',position:undefined,account,helpers:{clue:objective(),quest:objective({title:'Quest'})}}));
+  assert.equal(f.states.at(-1),'instanced');assert.equal(f.positions.length,1);
+  assert.deepEqual(f.unavailable.at(-1).account,account);
+  assert.equal(f.unavailable.at(-1).helpers.quest.title,'Quest');
+  s.message(snapshot(3,{availability:'instanced',position:undefined,helpers:{quest:objective({title:'Next quest step'})}}));
+  assert.equal(f.unavailable.at(-1).helpers.clue,undefined);
+  assert.equal(f.unavailable.at(-1).helpers.quest.title,'Next quest step');
+  s.message(snapshot(4,{availability:'instanced',position:undefined}));
+  assert.equal(f.unavailable.at(-1).helpers,undefined);
+  s.message(snapshot(5));assert.equal(f.states.at(-1),'connected');assert.equal(f.positions.length,2);
+});
+
+test('logout loading stale and unavailable states cannot carry personal helper data', () => {
+  for(const availability of ['logged_out','loading','stale','unavailable']) {
+    const f=fixture();f.connection.start();const s=f.sockets[0];s.open();s.message(accepted);
+    s.message(snapshot(1,{availability,position:undefined,helpers:{clue:objective()}}));
+    assert.equal(f.states.at(-1),'rejected');assert.equal(f.positions.length,0);assert.equal(f.unavailable.length,0);
+  }
+});
+
+test('instances reject bogus coordinates and malformed helper or account details', () => {
+  for(const extra of [{position:{x:1,y:2,plane:0}}, {account:{name:'Invalid'}},
+    {helpers:{clue:objective({targets:[{x:1,y:2,plane:4}]})}}, {helpers:[]}]) {
+    const f=fixture();f.connection.start();const s=f.sockets[0];s.open();s.message(accepted);
+    s.message(snapshot(1,{availability:'instanced',position:undefined,...extra}));
+    assert.equal(f.states.at(-1),'rejected');assert.equal(f.unavailable.length,0);
+  }
+});
+
+test('instance data still clears on logout disconnect and heartbeat expiry', () => {
+  for(const reason of ['logout','disconnect','stale']) {
+    const f=fixture();f.connection.start();const s=f.sockets[0];s.open();s.message(accepted);
+    s.message(snapshot(1,{availability:'instanced',position:undefined,helpers:{clue:objective()}}));
+    assert.equal(f.states.at(-1),'instanced');const before=f.clears;
+    if(reason==='logout')s.message(snapshot(2,{availability:'logged_out',position:undefined}));
+    else if(reason==='disconnect')f.connection.disconnect();else f.advance(8000);
+    assert.ok(f.clears>before,reason+' retained personal data');
+  }
 });
 
 test('optional clue destination metadata is bounded without breaking older clients', () => {

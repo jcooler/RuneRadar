@@ -43,7 +43,8 @@ on GitHub Pages; live player data does not require a hosted relay.
 ## Current limitations
 
 - Browser and RuneLite must run on the same computer.
-- Player location is hidden in unsupported instanced areas.
+- Player location is hidden in instanced areas, including player-owned houses.
+  Account details and enabled helper destinations keep updating there.
 - Clue coverage still needs in-game validation. Some clues provide instructions
   without a map target; equipment, combat and puzzle overlays stay in RuneLite.
 - Quest step sharing is experimental and does not work with the current

@@ -170,11 +170,8 @@ public class RuneRadarPlugin extends Plugin
         Player player = client.getLocalPlayer();
         if (client.getGameState() != GameState.LOGGED_IN || player == null)
             current.update(PlayerData.unavailable("logged_out"));
-        else if (client.isInInstancedRegion())
-            current.update(PlayerData.unavailable("instanced"));
         else
         {
-            WorldPoint point = player.getWorldLocation();
             String name = player.getName();
             PlayerData.Account account = name == null || name.isEmpty() ? null : new PlayerData.Account(
                 name, client.getWorld(), client.getBoostedSkillLevel(Skill.HITPOINTS),
@@ -182,8 +179,14 @@ public class RuneRadarPlugin extends Plugin
             boolean viewer = current.hasViewer();
             HelperData clue = ClueHelperAdapter.capture(config.showClues(), viewer, this::activeCluePlugin);
             HelperData quest = questBridge.capture(config.showQuests(), viewer, eventBus::post);
-            current.update(PlayerData.position(point.getX(), point.getY(), point.getPlane(), account,
-                new HelperData.Snapshot(clue, quest)));
+            HelperData.Snapshot helpers = new HelperData.Snapshot(clue, quest);
+            if (client.isInInstancedRegion())
+                current.update(PlayerData.instanced(account, helpers));
+            else
+            {
+                WorldPoint point = player.getWorldLocation();
+                current.update(PlayerData.position(point.getX(), point.getY(), point.getPlane(), account, helpers));
+            }
         }
     }
 }

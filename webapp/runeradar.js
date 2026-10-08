@@ -256,19 +256,20 @@ function setStatus(text, cls) {
 
 function updatePlayerInfo(data) {
   infoEl.classList.remove("hidden");
-  document.getElementById("locate-btn").classList.remove("hidden");
+  const instanced = data.availability === "instanced";
+  locateButton.classList.toggle("hidden", instanced);
 
   currentPlayerName = data.account?.name || "Your location";
   nameEl.textContent = currentPlayerName;
   const account = data.account;
-  const area = RuneRadarAreas.getArea(data.x, data.y);
+  const area = instanced ? "Instanced area" : RuneRadarAreas.getArea(data.x, data.y);
   document.getElementById("p-world").textContent = account ? `W${account.world}${area ? ` · ${area}` : ""}` : "";
   document.getElementById("p-hp").textContent = account ? `HP ${account.hitpoints}` : "";
   document.getElementById("p-prayer").textContent = account ? `Prayer ${account.prayer}` : "";
   document.getElementById("p-run").textContent = account ? `Run ${account.runEnergy}%` : "";
   document.getElementById("p-stats").hidden = !account;
   const floor = FLOOR_NAMES[data.plane] || `Floor ${data.plane}`;
-  coordsEl.textContent = `(${data.x}, ${data.y}) ${floor}`;
+  coordsEl.textContent = instanced ? "Player position hidden" : `(${data.x}, ${data.y}) ${floor}`;
 }
 
 function hidePlayerInfo() {
@@ -325,7 +326,18 @@ function updatePosition(x, y, data) {
 
 // ── Personal connection ─────────────────────────────────
 function clearPersonalPosition() {
+  clearPlayerPosition();
   objectives.clear();
+}
+
+function updateUnavailablePosition(data) {
+  clearPlayerPosition();
+  updatePlayerInfo({...data, availability: "instanced"});
+  // Always replace from the fresh snapshot, including opt-out and changed steps.
+  objectives.update(data.helpers);
+}
+
+function clearPlayerPosition() {
   if (playerMarker) { map.removeLayer(playerMarker); playerMarker = null; }
   if (playerLabelMarker) { map.removeLayer(playerLabelMarker); playerLabelMarker = null; }
   currentPlayerName = "Your location";
@@ -344,7 +356,7 @@ const connectionMessages = {
   connected: "Connected to RuneLite",
   logged_out: "Connected · Log in to show your location.",
   loading: "Connected · Waiting for the game to load…",
-  instanced: "Connected · Location unavailable in this instance.",
+  instanced: "Connected · Player position hidden",
   unavailable: "Connected · Location unavailable here.",
   stale: "Waiting for a fresh location from RuneLite…",
   reconnecting: "Connection lost. Reconnecting to RuneLite…",
@@ -356,6 +368,7 @@ function createMapConnection(launch) { return RuneRadarConnection.createConnecti
   launch,
   onPosition: data => updatePosition(data.x, data.y, data),
   onClear: clearPersonalPosition,
+  onUnavailable: updateUnavailablePosition,
   onState: state => {
     connectionState = state;
     setStatus(connectionMessages[state], ["connected", "logged_out", "loading", "instanced", "unavailable"].includes(state)
