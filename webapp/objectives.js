@@ -1,6 +1,6 @@
 /* Live objectives stay in tab memory. Consent is owned by the RuneLite settings. */
 window.RuneRadarObjectives = {
-  create({map, container, getPlane, showTarget}) {
+  create({map, container, getPlane, showTarget, getDisplayPlane = plane => plane}) {
     map.createPane('objectivePane');
     map.getPane('objectivePane').style.zIndex = '620';
     const layer = L.layerGroup().addTo(map);
@@ -38,7 +38,7 @@ window.RuneRadarObjectives = {
         const objective = current?.[kind];
         if (!objective || objective.state !== 'active') continue;
         objective.targets.forEach((point, index) => {
-          if (displayPlane(kind, point) !== getPlane()) return;
+          if (getDisplayPlane(displayPlane(kind, point)) !== getPlane()) return;
           const label = `${names[kind]}: ${targetName(kind, objective, point, index)}`;
           const marker = L.marker([point.y, point.x], {pane:'objectivePane', alt:label, keyboard:true,
             icon:L.divIcon({className:`objective-marker ${kind}${objective.approximate ? ' approximate' : ''}`,

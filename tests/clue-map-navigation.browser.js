@@ -38,14 +38,14 @@ async (page) => {
       assert((await p.locator('.objective-tooltip').innerText()).includes(instruction),'hover instruction missing');
       await p.screenshot({path:'artifacts/browser/clue-ground-map-context.png'});
     });
-    await check('clue browsing stays on ground after player climbs and follow restores player floor',async()=>{
+    await check('clue browsing and resumed follow keep ground geography while the player climbs',async()=>{
       await show();await update(chest,1);await settle();
-      assert(await p.evaluate(()=>currentPlane===0&&!followPlayer&&!map.hasLayer(playerMarker)),'player update changed the clue map or showed player on wrong floor');
+      assert(await p.evaluate(()=>currentPlane===0&&!followPlayer&&map.hasLayer(playerMarker)),'player update changed the ground map or hid the upstairs marker');
       assert(await p.locator('.objective-marker.clue').count()===1,'clue vanished while browsing');
       await p.getByRole('button',{name:'Follow my location',exact:true}).click();await settle();
-      assert(await p.evaluate(()=>currentPlane===1&&followPlayer&&map.hasLayer(playerMarker)),'follow no longer restores player floor');
+      assert(await p.evaluate(()=>currentPlane===0&&followPlayer&&map.hasLayer(playerMarker)),'follow did not restore the player on the ground map');
       await show();
-      assert(await p.evaluate(()=>currentPlane===0&&!followPlayer),'show on map did not return from upstairs to ground');
+      assert(await p.evaluate(()=>currentPlane===0&&!followPlayer),'show on map did not pause follow in ground view');
     });
     await check('higher floors and underground coordinates preserve their map location',async()=>{
       await update({...chest,plane:2});await show();

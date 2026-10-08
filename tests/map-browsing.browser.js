@@ -1,5 +1,8 @@
 // Browser regression function accepting a Playwright page connected to the local map server.
-async (page) => {
+async (basePage) => {
+  const context=await basePage.context().browser().newContext({viewport:{width:1280,height:900}});
+  const page=await context.newPage();
+  try {
   const failures = [], passed = [];
   const check = async (name, action) => {
     try { await action(); passed.push(name); }
@@ -7,7 +10,7 @@ async (page) => {
   };
   const assert = (value, message) => { if (!value) throw new Error(message); };
   await page.goto('http://127.0.0.1:8000/');
-  await page.evaluate(() => localStorage.removeItem('runeradar-follow'));
+  await page.evaluate(() => {localStorage.removeItem('runeradar-follow');localStorage.setItem('runeradar-floor-layouts','true');});
   await page.goto('http://127.0.0.1:8000/');
   await page.waitForSelector('#settingsFollow', {state: 'attached'});
   const settle = async () => {
@@ -39,7 +42,7 @@ async (page) => {
     assert(near(await center(), {x:3224,y:3220,plane:0}), 'did not continue following');
     assert(await page.locator('#locate-btn').getAttribute('aria-pressed') === 'true', 'following state missing');
   });
-  await check('drag pauses follow across floor changes and temporary loss', async () => {
+  await check('drag pauses follow across optional floor changes and temporary loss', async () => {
     const box = await page.locator('#map').boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
@@ -86,4 +89,5 @@ async (page) => {
   });
   if (failures.length) throw new Error(JSON.stringify({passed, failures}));
   return {passed};
+  } finally {await context.close();}
 }

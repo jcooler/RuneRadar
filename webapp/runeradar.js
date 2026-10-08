@@ -10,6 +10,7 @@ function escHtml(str) {
 let markerColor = MapStorage.getItem("runeradar-color") || "#3eff3e";
 let showLocationLabel = MapStorage.getItem("runeradar-label") !== "false";
 let autoFollow = MapStorage.getItem("runeradar-follow") !== "false";
+let showFloorLayouts = MapStorage.getItem("runeradar-floor-layouts") === "true";
 let fontScale = parseFloat(MapStorage.getItem("runeradar-fontscale") || "1.0");
 if (!Number.isFinite(fontScale) || fontScale < 0.5 || fontScale > 3) fontScale = 1;
 let currentTheme = MapStorage.getItem("runeradar-theme") || "dark";
@@ -68,6 +69,8 @@ function gameToLatLng(x, y) {
 // ── Tile Layers with Plane Support ──────────────────────
 
 let currentPlane = 0;
+let requestedPlane = 0;
+const getMapPlane = plane => showFloorLayouts ? plane : 0;
 
 // Silent tile loader - hides broken tiles instead of showing broken image icons
 function createSilentTile(src, done, fallbackSrc) {
@@ -137,6 +140,8 @@ localTileLayer.addTo(map);
 
 /** Switch the map to show a different plane (floor level) */
 function switchPlane(newPlane) {
+  requestedPlane = newPlane;
+  newPlane = getMapPlane(newPlane);
   if (newPlane === currentPlane) return;
   currentPlane = newPlane;
   localTileLayer.redraw();
@@ -145,7 +150,7 @@ function switchPlane(newPlane) {
 
 let objectives = null;
 objectives = RuneRadarObjectives.create({map, container: document.getElementById("objectives"),
-  getPlane: () => currentPlane, showTarget: (point, plane) => {
+  getPlane: () => currentPlane, getDisplayPlane: getMapPlane, showTarget: (point, plane) => {
     pauseFollowing();
     switchPlane(plane);
     syncPlayerFloor();
@@ -172,11 +177,13 @@ function makePlayerIcon(color) {
 
 function makePlayerLabel(name) {
   const size = Math.round(16 * fontScale);
+  const upstairs = playerPlane > 0 && !showFloorLayouts;
+  const floorLabel = upstairs ? `<span class="player-floor">Upstairs${playerPlane > 1 ? ` · Floor ${playerPlane}` : ""}</span>` : "";
   return L.divIcon({
     className: "player-label",
-    html: `<span style="font-size:${size}px">${escHtml(name || "Your Location")}</span>`,
-    iconSize: [120, 24],
-    iconAnchor: [60, 34],
+    html: `<span style="font-size:${size}px">${escHtml(name || "Your Location")}</span>${floorLabel}`,
+    iconSize: [120, upstairs ? 38 : 24],
+    iconAnchor: [60, upstairs ? 48 : 34],
   });
 }
 
@@ -201,7 +208,7 @@ function pauseFollowing() { setFollowing(false); }
 function syncPlayerFloor() {
   for (const marker of [playerMarker, playerLabelMarker]) {
     if (!marker) continue;
-    if (playerPlane === currentPlane) {
+    if (getMapPlane(playerPlane) === currentPlane) {
       if (!map.hasLayer(marker)) marker.addTo(map);
     } else if (map.hasLayer(marker)) map.removeLayer(marker);
   }
@@ -640,6 +647,9 @@ baseMapPainted.then(() => loadMapOverlays(map, gameToLatLng)).then((overlayLayer
         <option value="game"${currentTheme === "game" ? " selected" : ""}>Old School</option>
       </select>
     </div>
+    <div class="settings-title" style="margin-top:8px">Map view</div>
+    ${makeSettingsCheckbox("settingsFloorLayouts", "Show upper-floor layouts", showFloorLayouts)}
+    <p id="floor-layouts-note" class="storage-notice">Off keeps the ground map while you are upstairs. Upper-floor layouts can be sparse. Supported cave and dungeon maps remain available.</p>
     <div class="settings-title" style="margin-top:8px">Player Settings</div>
     <div class="settings-row">
       <label>Color</label>
@@ -667,6 +677,18 @@ baseMapPainted.then(() => loadMapOverlays(map, gameToLatLng)).then((overlayLayer
   window.addEventListener("map-storage-unavailable", () => { storageNote.hidden = false; });
 
   // Wire up checkboxes
+  const floorCb = document.getElementById("settingsFloorLayouts");
+  floorCb.setAttribute("aria-label", "Show upper-floor layouts");
+  floorCb.setAttribute("aria-describedby", "floor-layouts-note");
+  styleCheckbox(floorCb);
+  floorCb.addEventListener("change", event => {
+    showFloorLayouts = event.target.checked;
+    MapStorage.setItem("runeradar-floor-layouts", showFloorLayouts);
+    switchPlane(requestedPlane);
+    syncPlayerFloor();
+    if (playerLabelMarker) playerLabelMarker.setIcon(makePlayerLabel(currentPlayerName));
+    objectives.refreshPlane();
+  });
   const followCb = document.getElementById("settingsFollow");
   const labelCb = document.getElementById("settingsLabel");
   const infoPanelCb = document.getElementById("settingsInfoPanel");

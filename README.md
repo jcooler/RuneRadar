@@ -7,6 +7,9 @@ the Plugin Hub.
 ## Features
 
 - Live player location with a close initial view.
+- Ground-map context while upstairs, with an Upstairs marker label and optional
+  upper-floor layouts in map settings. Supported caves and dungeons retain
+  their own map locations.
 - Account name, world, nearby area, HP, prayer and run energy.
 - Search, map layers, transport locations and named raid entrances.
 - Free browsing while the player marker keeps updating. Use the navigation

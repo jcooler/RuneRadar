@@ -11,10 +11,11 @@ async (page) => {
     {x,y,plane,account:{name:'Example Player',world:613,hitpoints:87,prayer:63,runEnergy:42},helpers});
   const settle = async()=>{await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await p.waitForFunction(()=>!map._panAnim?._inProgress&&!map._animatingZoom);};
   try {
+    await context.addInitScript(()=>localStorage.setItem('runeradar-floor-layouts','true'));
     await p.goto('http://127.0.0.1:8000/'); await p.waitForSelector('#settingsFollow',{state:'attached'});
     await check('objectives off by default',async()=>assert(await p.locator('#objectives').isHidden(),'panel visible without consent'));
     await update({clue:clues,quest}); await settle();
-    await check('text is inert and floor filtering keeps player above targets',async()=>{
+    await check('text is inert and optional floor filtering keeps player above targets',async()=>{
       assert(await p.locator('.objective-card').count()===2,'missing cards');
       assert(await p.locator('#objectives img').count()===0,'instruction parsed as HTML');
       assert(await p.locator('.objective-marker.clue').count()===1,'clue marker missing');

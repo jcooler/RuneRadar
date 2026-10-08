@@ -245,6 +245,8 @@
       text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 2px #000; white-space: nowrap; text-align: center; pointer-events: none;
     }
 
+    .player-floor { display:block; font-size:11px; line-height:14px; color:#ffe0a8; }
+
     /* Transport icons */
     .transport-icon { text-align: center; font-weight: 700; pointer-events: auto; }
     .fairy-ring span {
@@ -273,10 +275,11 @@
     /* Peer markers */
 
     /* Layer control */
+    .leaflet-top.leaflet-right { z-index: 1500; }
     .leaflet-control-layers { background: var(--bg-panel) !important; border: 1px solid var(--border) !important;
       border-radius: 8px !important; backdrop-filter: blur(10px); box-shadow: 0 4px 16px var(--shadow) !important;
       color: var(--text) !important; font-family: var(--font); padding: 0 !important; z-index: 1500 !important; }
-    .leaflet-control-layers-expanded { padding: 10px 14px !important; min-width: 210px; max-height: 80vh; overflow-y: auto; z-index: 1500 !important;
+    .leaflet-control-layers-expanded { padding: 10px 14px !important; width: 300px; max-width: calc(100vw - 20px); box-sizing: border-box; min-width: 210px; max-height: 80vh; overflow-y: auto; z-index: 1500 !important;
       scrollbar-width: none; -ms-overflow-style: none; }
     .leaflet-control-layers-expanded::-webkit-scrollbar { display: none; }
     .leaflet-control-layers-toggle { background-color: var(--bg-panel) !important; border: 1px solid var(--border) !important;
